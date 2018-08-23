@@ -16,7 +16,9 @@ from sklearn.metrics import confusion_matrix, roc_auc_score
 from sklearn.model_selection import cross_val_score
 from sklearn.cross_validation import train_test_split
 from sklearn.ensemble import GradientBoostingRegressor
+from sklearn.preprocessing import LabelEncoder
 import xgboost as xgb
+from LabelClassEncoder import *
 
 # A class to hold our housing data
 class House():
@@ -217,13 +219,13 @@ class House():
                 self.all[house_variable_name] = self.all[house_variable_name].astype(house_variable_value['dtype'])
 
 
-    def engineer_features(self, house_config):
+    def ordinal_features(self, house_config):
         # General Dummification
-        categorical_columns = [x for x in self.all.columns if self.all[x].dtype == 'object' ]
-        non_categorical_columns = [x for x in self.all.columns if self.all[x].dtype != 'object' ]
+        self.categorical_columns = [x for x in self.all.columns if self.all[x].dtype == 'object' ]
+        self.non_categorical_columns = [x for x in self.all.columns if self.all[x].dtype != 'object' ]
 
         # TBD: do something with ordinals!!!!!
-        for column in categorical_columns:
+        for column in self.categorical_columns:
             for member_name, member_dict in house_config[column]['members'].items():
                 if member_dict['ordinal'] != 0:
                     print( "Replacing " + member_name + " with " + str(member_dict['ordinal']) + " in column " + column)
@@ -231,8 +233,16 @@ class House():
 
             #print( "Column " + column + " now has these unique values " + ' '.join(self.all[column].unique()))
 
-        use_columns = non_categorical_columns + categorical_columns
-        self.dummy_train = pd.get_dummies(self.all[use_columns], drop_first=True, dummy_na=True)
+    def one_hot_features(self):
+        self.use_columns = self.non_categorical_columns + self.categorical_columns
+        self.dummy = pd.get_dummies(self.all[self.use_columns], drop_first=True, dummy_na=True)
+
+    def label_encode(self):
+        self.label_count = self.all.copy()
+        for c in self.label_count.columns:
+            if self.label_count[c].dtype == 'object':
+                lce = LabelCountEncoder()
+                self.label_count[c] = lce.fit_transform(self.label_count[c])
 
         self.bx_train = self.dummy_train[~self.dummy_train['test']].drop(['test','SalePrice'], axis=1)
         self.by_train = self.dummy_train[~self.dummy_train['test']].SalePrice
@@ -269,8 +279,8 @@ class House():
 
 
     def test_train_split(self):
-        x=self.dummy_train[~self.dummy_train['test']].drop(['test','SalePrice'], axis=1).astype(object)
-        y=self.dummy_train[~self.dummy_train['test']].SalePrice
+        x=self.dummy[~self.dummy['test']].drop(['test','SalePrice'], axis=1).astype(object)
+        y=self.dummy[~self.dummy['test']].SalePrice
         try:
             self.x_train
         except:
@@ -300,9 +310,7 @@ class House():
     def xgboost(self):
         self.test_train_split()
 
-        model_xgb = xgb.XGBRegressor(colsample_bytree=0.4603, gamma=0.0468,
-                             learning_rate=0.05, max_depth=3,
-                             min_child_weight=1.7817, n_estimators=2200,
-                             reg_alpha=0.4640, reg_lambda=0.8571,
-                             subsample=0.5213, silent=1,
-                             random_state =7, nthread = -1)
+        self.dtrain = xgb.DMatrix(self.x_train, label = self.y_train)
+        self.dtest = xgb.DMatrix(self.x_train)
+        params = {"max_depth":2, "eta":0.1}
+        model = xgb.cv(params, dtrain,  num_boost_round=500, early_stopping_rounds=100)
