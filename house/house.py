@@ -23,10 +23,10 @@ class House():
     def __init__(self, train_data_file, test_data_file):
         train = pd.read_csv(train_data_file)
         test = pd.read_csv(test_data_file)
-        self.all = pd.concat([train,test], ignore_index=True, sort=True)
+        self.all = pd.concat([train,test], ignore_index=True)
         self.all['test'] = self.all.SalePrice.isnull()
         self.Id=self.all.Id
-        self.all.drop('Id', axis=1, inplace=True)
+        self.all
 
     def train(self):
         return(self.all[~self.all['test']])
@@ -157,7 +157,7 @@ class House():
             elif  column=='GarageYrBlt':
                 missing_grage_yr=self.all[self.all['GarageYrBlt'].isnull()].index
                 self.all.loc[self.all['GarageYrBlt'].isnull(),'GarageYrBlt'] = self.all['YearBuilt'].loc[missing_grage_yr]
-                self.all['GarageYrBlt'] = 0 if x == 'NA' else x for x in self.all['GarageYrBlt']]
+                self.all['GarageYrBlt'] = [0 if x == 'NA' else x for x in self.all['GarageYrBlt']]
             elif column == 'LotFrontage':
                 self.all[column].fillna(self.all[column].mean(),inplace=True)
             elif column == 'GarageYrBlt':
@@ -233,6 +233,12 @@ class House():
 
         use_columns = non_categorical_columns + categorical_columns
         self.dummy_train = pd.get_dummies(self.all[use_columns], drop_first=True, dummy_na=True)
+
+        self.bx_train = self.dummy_train[~self.dummy_train['test']].drop(['test','SalePrice'], axis=1)
+        self.by_train = self.dummy_train[~self.dummy_train['test']].SalePrice
+
+        self.bx_test = self.dummy_train[self.dummy_train['test']].drop(['test','SalePrice'], axis=1)
+
 
     def sale_price_charts(self):
         for i, column in enumerate(self.all.columns):
