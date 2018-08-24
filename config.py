@@ -65,9 +65,9 @@ HOUSE_CONFIG = {
 		"dtype": "",
 		"imputation_method": "",
 		"members": {
-			"Grvl": { "ordinal":0, "name":"Gravel"},
-			"Pave": { "ordinal":0, "name":"Paved"},
-			"NoAlley": { "ordinal":0, "name":"No alley access"},
+			"Grvl": { "ordinal":1, "name":"Gravel"},
+			"Pave": { "ordinal":2, "name":"Paved"},
+			"None": { "ordinal":2, "name":"No alley access"},
 		}
 	},
 	"LotShape": {
@@ -162,15 +162,15 @@ HOUSE_CONFIG = {
 		"dtype": "",
 		"imputation_method": "",
 		"members": {
-			"Artery": { "ordinal":0, "name":"Adjacent to arterial street"},
-			"Feedr": { "ordinal":0, "name":"Adjacent to feeder street	"},
-			"Norm": { "ordinal":0, "name":"Normal	"},
-			"RRNn": { "ordinal":0, "name":"Within 200' of North-South Railroad"},
-			"RRAn": { "ordinal":0, "name":"Adjacent to North-South Railroad"},
-			"PosN": { "ordinal":0, "name":"Near positive off-site feature--park, greenbelt, etc."},
-			"PosA": { "ordinal":0, "name":"Adjacent to postive off-site feature"},
-			"RRNe": { "ordinal":0, "name":"Within 200' of East-West Railroad"},
-			"RRAe": { "ordinal":0, "name":"Adjacent to East-West Railroad"},
+			"Artery": { "ordinal":3, "name":"Adjacent to arterial street"},
+			"Feedr": { "ordinal":3, "name":"Adjacent to feeder street	"},
+			"Norm": { "ordinal":2, "name":"Normal	"},
+			"RRNn": { "ordinal":1, "name":"Within 200' of North-South Railroad"},
+			"RRAn": { "ordinal":3, "name":"Adjacent to North-South Railroad"},
+			"PosN": { "ordinal":1, "name":"Near positive off-site feature--park, greenbelt, etc."},
+			"PosA": { "ordinal":1, "name":"Adjacent to postive off-site feature"},
+			"RRNe": { "ordinal":2, "name":"Within 200' of East-West Railroad"},
+			"RRAe": { "ordinal":3, "name":"Adjacent to East-West Railroad"},
 		}
 	},
 	"Condition2": {
@@ -178,15 +178,15 @@ HOUSE_CONFIG = {
 		"dtype": "",
 		"imputation_method": "",
 		"members": {
-			"Artery": { "ordinal":0, "name":"Adjacent to arterial street"},
-			"Feedr": { "ordinal":0, "name":"Adjacent to feeder street	"},
-			"Norm": { "ordinal":0, "name":"Normal	"},
-			"RRNn": { "ordinal":0, "name":"Within 200' of North-South Railroad"},
-			"RRAn": { "ordinal":0, "name":"Adjacent to North-South Railroad"},
-			"PosN": { "ordinal":0, "name":"Near positive off-site feature--park, greenbelt, etc."},
-			"PosA": { "ordinal":0, "name":"Adjacent to postive off-site feature"},
-			"RRNe": { "ordinal":0, "name":"Within 200' of East-West Railroad"},
-			"RRAe": { "ordinal":0, "name":"Adjacent to East-West Railroad"},
+			"Artery": { "ordinal":3, "name":"Adjacent to arterial street"},
+			"Feedr": { "ordinal":3, "name":"Adjacent to feeder street	"},
+			"Norm": { "ordinal":2, "name":"Normal	"},
+			"RRNn": { "ordinal":3, "name":"Within 200' of North-South Railroad"},
+			"RRAn": { "ordinal":3, "name":"Adjacent to North-South Railroad"},
+			"PosN": { "ordinal":1, "name":"Near positive off-site feature--park, greenbelt, etc."},
+			"PosA": { "ordinal":3, "name":"Adjacent to postive off-site feature"},
+			"RRNe": { "ordinal":3, "name":"Within 200' of East-West Railroad"},
+			"RRAe": { "ordinal":3, "name":"Adjacent to East-West Railroad"},
 		}
 	},
 	"BldgType": {
@@ -238,16 +238,16 @@ HOUSE_CONFIG = {
 		"dtype": "object",
 		"imputation_method": "",
 		"members": {
-			"10": { "ordinal":0, "name":"Very Excellent"},
-			"9": { "ordinal":0, "name":"Excellent"},
-			"8": { "ordinal":0, "name":"Very Good"},
-			"7": { "ordinal":0, "name":"Good"},
-			"6": { "ordinal":0, "name":"Above Average	"},
-			"5": { "ordinal":0, "name":"Average"},
-			"4": { "ordinal":0, "name":"Below Average	"},
-			"3": { "ordinal":0, "name":"Fair"},
-			"2": { "ordinal":0, "name":"Poor"},
-			"1": { "ordinal":0, "name":"Very Poor"},
+			"10": { "ordinal":10, "name":"Very Excellent"},
+			"9": { "ordinal":9, "name":"Excellent"},
+			"8": { "ordinal":8, "name":"Very Good"},
+			"7": { "ordinal":7, "name":"Good"},
+			"6": { "ordinal":6, "name":"Above Average	"},
+			"5": { "ordinal":5, "name":"Average"},
+			"4": { "ordinal":4, "name":"Below Average	"},
+			"3": { "ordinal":3, "name":"Fair"},
+			"2": { "ordinal":2, "name":"Poor"},
+			"1": { "ordinal":1, "name":"Very Poor"},
 		}
 	},
 	"YearBuilt": {
@@ -364,11 +364,11 @@ HOUSE_CONFIG = {
 		"dtype": "",
 		"imputation_method": "",
 		"members": {
-			"Ex": { "ordinal":0, "name":"Excellent"},
-			"Gd": { "ordinal":0, "name":"Good"},
-			"TA": { "ordinal":0, "name":"Average/Typical"},
-			"Fa": { "ordinal":0, "name":"Fair"},
-			"Po": { "ordinal":0, "name":"Poor"},
+			"Ex": { "ordinal":5, "name":"Excellent"},
+			"Gd": { "ordinal":4, "name":"Good"},
+			"TA": { "ordinal":3, "name":"Average/Typical"},
+			"Fa": { "ordinal":2, "name":"Fair"},
+			"Po": { "ordinal":1, "name":"Poor"},
 		}
 	},
 	"ExterCond": {
@@ -401,12 +401,12 @@ HOUSE_CONFIG = {
 		"dtype": "",
 		"imputation_method": "",
 		"members": {
-			"Ex": { "ordinal":0, "name":"Excellent (100+ inches)	"},
-			"Gd": { "ordinal":0, "name":"Good (90-99 inches)"},
-			"TA": { "ordinal":0, "name":"Typical (80-89 inches)"},
-			"Fa": { "ordinal":0, "name":"Fair (70-79 inches)"},
-			"Po": { "ordinal":0, "name":"Poor (<70 inches"},
-			"NA": { "ordinal":0, "name":"No Basement"},
+			"Ex": { "ordinal":3, "name":"Excellent (100+ inches)	"},
+			"Gd": { "ordinal":2, "name":"Good (90-99 inches)"},
+			"TA": { "ordinal":1, "name":"Typical (80-89 inches)"},
+			"Fa": { "ordinal":1, "name":"Fair (70-79 inches)"},
+			"Po": { "ordinal":1, "name":"Poor (<70 inches"},
+			"None": { "ordinal":1, "name":"No Basement"},
 		}
 	},
 	"BsmtCond": {
@@ -414,12 +414,12 @@ HOUSE_CONFIG = {
 		"dtype": "",
 		"imputation_method": "",
 		"members": {
-			"Ex": { "ordinal":0, "name":"Excellent"},
-			"Gd": { "ordinal":0, "name":"Good"},
-			"TA": { "ordinal":0, "name":"Typical - slight dampness allowed"},
-			"Fa": { "ordinal":0, "name":"Fair - dampness or some cracking or settling"},
-			"Po": { "ordinal":0, "name":"Poor - Severe cracking, settling, or wetness"},
-			"NA": { "ordinal":0, "name":"No Basement"},
+			"Ex": { "ordinal":4, "name":"Excellent"},
+			"Gd": { "ordinal":3, "name":"Good"},
+			"TA": { "ordinal":2, "name":"Typical - slight dampness allowed"},
+			"Fa": { "ordinal":1, "name":"Fair - dampness or some cracking or settling"},
+			"Po": { "ordinal":1, "name":"Poor - Severe cracking, settling, or wetness"},
+			"None": { "ordinal":1, "name":"No Basement"},
 		}
 	},
 	"BsmtExposure": {
@@ -427,11 +427,11 @@ HOUSE_CONFIG = {
 		"dtype": "",
 		"imputation_method": "",
 		"members": {
-			"Gd": { "ordinal":0, "name":"Good Exposure"},
-			"Av": { "ordinal":0, "name":"Average Exposure (split levels or foyers typically score average or above)	"},
-			"Mn": { "ordinal":0, "name":"Mimimum Exposure"},
-			"No": { "ordinal":0, "name":"No Exposure"},
-			"NA": { "ordinal":0, "name":"No Basement"},
+			"Gd": { "ordinal":3, "name":"Good Exposure"},
+			"Av": { "ordinal":2, "name":"Average Exposure (split levels or foyers typically score average or above)	"},
+			"Mn": { "ordinal":2, "name":"Mimimum Exposure"},
+			"No": { "ordinal":2, "name":"No Exposure"},
+			"None": { "ordinal":1, "name":"No Basement"},
 		}
 	},
 	"BsmtFinType1": {
@@ -439,13 +439,13 @@ HOUSE_CONFIG = {
 		"dtype": "",
 		"imputation_method": "",
 		"members": {
-			"GLQ": { "ordinal":0, "name":"Good Living Quarters"},
-			"ALQ": { "ordinal":0, "name":"Average Living Quarters"},
-			"BLQ": { "ordinal":0, "name":"Below Average Living Quarters	"},
-			"Rec": { "ordinal":0, "name":"Average Rec Room"},
-			"LwQ": { "ordinal":0, "name":"Low Quality"},
-			"Unf": { "ordinal":0, "name":"Unfinshed"},
-			"NA": { "ordinal":0, "name":"No Basement"},
+			"GLQ": { "ordinal":2, "name":"Good Living Quarters"},
+			"ALQ": { "ordinal":1, "name":"Average Living Quarters"},
+			"BLQ": { "ordinal":1, "name":"Below Average Living Quarters	"},
+			"Rec": { "ordinal":1, "name":"Average Rec Room"},
+			"LwQ": { "ordinal":1, "name":"Low Quality"},
+			"Unf": { "ordinal":1, "name":"Unfinshed"},
+			"None": { "ordinal":1, "name":"No Basement"},
 		}
 	},
 	"BsmtFinSF1": {
@@ -460,13 +460,13 @@ HOUSE_CONFIG = {
 		"dtype": "",
 		"imputation_method": "0",
 		"members": {
-			"GLQ": { "ordinal":0, "name":"Good Living Quarters"},
-			"ALQ": { "ordinal":0, "name":"Average Living Quarters"},
-			"BLQ": { "ordinal":0, "name":"Below Average Living Quarters	"},
-			"Rec": { "ordinal":0, "name":"Average Rec Room"},
-			"LwQ": { "ordinal":0, "name":"Low Quality"},
-			"Unf": { "ordinal":0, "name":"Unfinshed"},
-			"NA": { "ordinal":0, "name":"No Basement"},
+			"GLQ": { "ordinal":4, "name":"Good Living Quarters"},
+			"ALQ": { "ordinal":3, "name":"Average Living Quarters"},
+			"BLQ": { "ordinal":2, "name":"Below Average Living Quarters	"},
+			"Rec": { "ordinal":2, "name":"Average Rec Room"},
+			"LwQ": { "ordinal":2, "name":"Low Quality"},
+			"Unf": { "ordinal":2, "name":"Unfinshed"},
+			"None": { "ordinal":1, "name":"No Basement"},
 		}
 	},
 	"BsmtFinSF2": {
@@ -508,11 +508,11 @@ HOUSE_CONFIG = {
 		"dtype": "",
 		"imputation_method": "",
 		"members": {
-			"Ex": { "ordinal":0, "name":"Excellent"},
-			"Gd": { "ordinal":0, "name":"Good"},
-			"TA": { "ordinal":0, "name":"Average/Typical"},
-			"Fa": { "ordinal":0, "name":"Fair"},
-			"Po": { "ordinal":0, "name":"Poor"},
+			"Ex": { "ordinal":5, "name":"Excellent"},
+			"Gd": { "ordinal":4, "name":"Good"},
+			"TA": { "ordinal":3, "name":"Average/Typical"},
+			"Fa": { "ordinal":2, "name":"Fair"},
+			"Po": { "ordinal":1, "name":"Poor"},
 		}
 	},
 	"CentralAir": {
@@ -520,8 +520,8 @@ HOUSE_CONFIG = {
 		"dtype": "",
 		"imputation_method": "",
 		"members": {
-			"N": { "ordinal":0, "name":"No"},
-			"Y": { "ordinal":0, "name":"Yes"},
+			"N": { "ordinal":2, "name":"No"},
+			"Y": { "ordinal":1, "name":"Yes"},
 		}
 	},
 	"Electrical": {
@@ -529,11 +529,11 @@ HOUSE_CONFIG = {
 		"dtype": "",
 		"imputation_method": "SBrkr",
 		"members": {
-			"SBrkr": { "ordinal":0, "name":"Standard Circuit Breakers & Romex"},
-			"FuseA": { "ordinal":0, "name":"Fuse Box over 60 AMP and all Romex wiring (Average)	"},
-			"FuseF": { "ordinal":0, "name":"60 AMP Fuse Box and mostly Romex wiring (Fair)"},
-			"FuseP": { "ordinal":0, "name":"60 AMP Fuse Box and mostly knob & tube wiring (poor)"},
-			"Mix": { "ordinal":0, "name":"Mixed"},
+			"SBrkr": { "ordinal":3, "name":"Standard Circuit Breakers & Romex"},
+			"FuseA": { "ordinal":2, "name":"Fuse Box over 60 AMP and all Romex wiring (Average)	"},
+			"FuseF": { "ordinal":2, "name":"60 AMP Fuse Box and mostly Romex wiring (Fair)"},
+			"FuseP": { "ordinal":1, "name":"60 AMP Fuse Box and mostly knob & tube wiring (poor)"},
+			"Mix": { "ordinal":1, "name":"Mixed"},
 		}
 	},
 	"1stFlrSF": {
@@ -566,7 +566,7 @@ HOUSE_CONFIG = {
 	},
 	"BsmtFullBath": {
 		"description": "Basement full bathrooms",
-		"dtype": "",
+		"dtype": "int64",
 		"imputation_method": "0",
 		"members": {
 		}
@@ -611,11 +611,12 @@ HOUSE_CONFIG = {
 		"dtype": "",
 		"imputation_method": "",
 		"members": {
-			"Ex": { "ordinal":0, "name":"Excellent"},
-			"Gd": { "ordinal":0, "name":"Good"},
-			"TA": { "ordinal":0, "name":"Typical/Average"},
-			"Fa": { "ordinal":0, "name":"Fair"},
-			"Po": { "ordinal":0, "name":"Poor"},
+			"Ex": { "ordinal":6, "name":"Excellent"},
+			"Gd": { "ordinal":5, "name":"Good"},
+			"TA": { "ordinal":4, "name":"Typical/Average"},
+			"Fa": { "ordinal":3, "name":"Fair"},
+			"Po": { "ordinal":2, "name":"Poor"},
+			"None": { "ordinal":1, "name":"Typical/Average"},
 		}
 	},
 	"TotRmsAbvGrd": {
@@ -631,6 +632,7 @@ HOUSE_CONFIG = {
 		"imputation_method": "",
 		"members": {
 			"Typ": { "ordinal":8, "name":"Typical Functionality"},
+			"None": { "ordinal":8, "name":"Typical Functionality"},
 			"Min1": { "ordinal":7, "name":"Minor Deductions 1"},
 			"Min2": { "ordinal":6, "name":"Minor Deductions 2"},
 			"Mod": { "ordinal":5, "name":"Moderate Deductions"},
@@ -671,13 +673,13 @@ HOUSE_CONFIG = {
 			"BuiltIn": { "ordinal":0, "name":"Built-In (Garage part of house - typically has room above garage)"},
 			"CarPort": { "ordinal":0, "name":"Car Port"},
 			"Detchd": { "ordinal":0, "name":"Detached from home"},
-			"None": { "ordinal":0, "name":"No Garage"},
+			"NA": { "ordinal":0, "name":"No Garage"},
 		}
 	},
 	"GarageYrBlt": {
 		"description": "Year garage was built",
-		"dtype": "int64",
-		"imputation_method": "0",
+		"dtype": "",
+		"imputation_method": "NA",
 		"members": {
 		}
 	},
@@ -686,10 +688,10 @@ HOUSE_CONFIG = {
 		"dtype": "",
 		"imputation_method": "",
 		"members": {
-			"Fin": { "ordinal": 1, "name":"Finished"},
-			"RFn": { "ordinal": 2, "name":"Rough Finished	"},
-			"Unf": { "ordinal": 3, "name":"Unfinished"},
-			"None": { "ordinal": 4, "name":"No Garage"},
+			"Fin": { "ordinal": 4, "name":"Finished"},
+			"RFn": { "ordinal": 3, "name":"Rough Finished	"},
+			"Unf": { "ordinal": 2, "name":"Unfinished"},
+			"None": { "ordinal": 1, "name":"No Garage"},
 		}
 	},
 	"GarageCars": {
@@ -711,12 +713,12 @@ HOUSE_CONFIG = {
 		"dtype": "",
 		"imputation_method": "",
 		"members": {
-			"Ex": { "ordinal":1, "name":"Excellent"},
-			"Gd": { "ordinal":2, "name":"Good"},
-			"TA": { "ordinal":3, "name":"Typical/Average"},
-			"Fa": { "ordinal":4, "name":"Fair"},
-			"Po": { "ordinal":5, "name":"Poor"},
-			"None": { "ordinal":6, "name":"No Garage"},
+			"Ex": { "ordinal":6, "name":"Excellent"},
+			"Gd": { "ordinal":5, "name":"Good"},
+			"TA": { "ordinal":4, "name":"Typical/Average"},
+			"Fa": { "ordinal":3, "name":"Fair"},
+			"Po": { "ordinal":2, "name":"Poor"},
+			"None": { "ordinal":1, "name":"No Garage"},
 		}
 	},
 	"GarageCond": {
@@ -724,12 +726,12 @@ HOUSE_CONFIG = {
 		"dtype": "",
 		"imputation_method": "",
 		"members": {
-			"Ex": { "ordinal":1, "name":"Excellent"},
-			"Gd": { "ordinal":2, "name":"Good"},
-			"TA": { "ordinal":3, "name":"Typical/Average"},
-			"Fa": { "ordinal":4, "name":"Fair"},
-			"Po": { "ordinal":5, "name":"Poor"},
-			"None": { "ordinal":6, "name":"No Garage"},
+			"Ex": { "ordinal":6, "name":"Excellent"},
+			"Gd": { "ordinal":5, "name":"Good"},
+			"TA": { "ordinal":4, "name":"Typical/Average"},
+			"Fa": { "ordinal":3, "name":"Fair"},
+			"Po": { "ordinal":2, "name":"Poor"},
+			"None": { "ordinal":1, "name":"No Garage"},
 		}
 	},
 	"PavedDrive": {
@@ -779,7 +781,7 @@ HOUSE_CONFIG = {
 	},
 	"PoolArea": {
 		"description": "Pool area in square feet",
-		"dtype": "",
+		"dtype": "float64",
 		"imputation_method": "",
 		"members": {
 		}
@@ -789,12 +791,12 @@ HOUSE_CONFIG = {
 		"dtype": "",
 		"imputation_method": "",
 		"members": {
-			"Ex": { "ordinal":1, "name":"Excellent"},
-			"Gd": { "ordinal":2, "name":"Good"},
+			"Ex": { "ordinal":5, "name":"Excellent"},
+			"Gd": { "ordinal":4, "name":"Good"},
 			"TA": { "ordinal":3, "name":"Average/Typical"},
-			"Fa": { "ordinal":4, "name":"Fair"},
-			"None": { "ordinal":5, "name":"No Pool"},
-			"Na": { "ordinal":5, "name":"No Pool"},
+			"Fa": { "ordinal":2, "name":"Fair"},
+			"None": { "ordinal":0, "name":"No Pool"},
+			"Na": { "ordinal":0, "name":"No Pool"},
 		}
 	},
 	"Fence": {
