@@ -240,7 +240,7 @@ class House():
         skewed_features = skewness.index
         lam = 0.15
         for feat in skewed_features:
-            self.all[feat] = boxcox1p(self.all[feat], lam).astype('float64')
+            self.all[feat] = boxcox1p(self.all[feat], lam)
 
     def add_features(self):
         self.all['TotalSF'] = self.all['TotalBsmtSF'] + self.all['1stFlrSF'] + self.all['2ndFlrSF']
@@ -273,6 +273,7 @@ class House():
         self.save_test_train_data()
 
     def save_test_train_data(self):
+        print(self.encoded_all.head())
         self.bx_train = self.encoded_all[~self.encoded_all['test']].drop(['test','SalePrice'], axis=1)
         self.by_train = self.encoded_all[~self.encoded_all['test']].SalePrice
 
