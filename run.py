@@ -6,6 +6,7 @@
 import math
 import json
 from house import *
+import pandas as pd
 from config import *
 del house
 house = House('data/train.csv','data/test.csv')
@@ -14,18 +15,25 @@ house = House('data/train.csv','data/test.csv')
 #%%
 # Clean/impute data
 #house.cleanRP()
+house.remove_outliers()
 house.clean()
 # Convert types after clenaing and filling in all NAs
 house.convert_types(HOUSE_CONFIG)
+house.add_features()
+house.log_skew()
+house.all
 ##Feature Engeneneering:
 house.ordinal_features(HOUSE_CONFIG)
+#house.label_encode()
 house.one_hot_features()
-house.label_encode()
-#house.engineer_features(HOUSE_CONFIG)
+
 #%%
 
-house.xgboost()
-house.sk_random_forest(1000)
+house.sk_random_forest(house.encoded_all, 100)
+
+pd.set_option('display.max_columns', 500)
+house.encoded_all
+
 #Save processed data frames
 house.dummy_train.to_csv('dummy_clean_Rachel')
 
@@ -56,11 +64,15 @@ house.sale_price_charts()
 house.relation_stats('LotFrontage', 'LotArea', 'LotConfig')
 
 # TBD
+
 for category in [x for x in house.all.columns if house.all[x].dtype == 'object']:
     print("Category " + category + " has n unique values " + str(house.all[category].nunique() / house.all.shape[0] * 100) + "%" )
 
 
-
+def distskew(dataset, feature):
+    fig = plt.figure()
+    sns.distplot(dataset[feature], fit=norm);
+    return("Skewness = ",skew(dataset[feature].dropna()))
 
 #for c in [x for x in house.bx_train.columns if house.bx_train[x].dtype == 'object' ]:
 #    lbl = LabelEncoder()
@@ -74,6 +86,7 @@ print('Shape house.bx_train: {}'.format(house.bx_train.shape))
 house.bx_train.sample(10)
 
 
+##MODELING
 
 from sklearn.linear_model import ElasticNet, Lasso,  BayesianRidge, LassoLarsIC
 from sklearn.ensemble import RandomForestRegressor,  GradientBoostingRegressor
@@ -94,7 +107,7 @@ import pandas as pd
 n_folds = 5
 
 def rmsle_cv(model):
-    kf = KFold(n_folds, shuffle=True, random_state=42).get_n_splits(house.bx_train.values)
+    kf = KFold(n_folds, shuffle=True).get_n_splits(house.bx_train.values)
     rmse= np.sqrt(-cross_val_score(model, house.bx_train.values, house.by_train, scoring="neg_mean_squared_error", cv = kf))
     return(rmse)
 
@@ -102,7 +115,7 @@ lasso = make_pipeline(RobustScaler(), Lasso(alpha =0.0005, random_state=1))
 
 ENet = make_pipeline(RobustScaler(), ElasticNet(alpha=0.0005, l1_ratio=.9, random_state=3))
 
-KRR = KernelRidge(alpha=0.6, kernel='polynomial', degree=2, coef0=2.5)
+KRR = KernelRidge()
 
 GBoost = GradientBoostingRegressor(n_estimators=3000, learning_rate=0.05,
                                    max_depth=4, max_features='sqrt',
@@ -126,6 +139,9 @@ print("\nLasso score: {:.4f} ({:.4f})\n".format(score.mean(), score.std()))
 score = rmsle_cv(ENet)
 print("ElasticNet score: {:.4f} ({:.4f})\n".format(score.mean(), score.std()))
 
+score = rmsle_cv(KRR)
+print("Kernel Ridge score: {:.4f} ({:.4f})\n".format(score.mean(), score.std()))
+
 score = rmsle_cv(GBoost)
 print("Gradient Boosting score: {:.4f} ({:.4f})\n".format(score.mean(), score.std()))
 
@@ -133,11 +149,51 @@ score = rmsle_cv(model_xgb)
 print("Xgboost score: {:.4f} ({:.4f})\n".format(score.mean(), score.std()))
 # %%
 
+lasso.fit(house.bx_train.values, house.by_train)
+prediction = lasso.predict(house.bx_test)
+
+ENet.fit(house.bx_train.values, house.by_train)
+prediction = ENet.predict(house.bx_test)
+
 GBoost.fit(house.bx_train.values, house.by_train)
 prediction = GBoost.predict(house.bx_test)
 
+model_xgb.fit(house.bx_train.values, house.by_train)
+prediction = model_xgb.predict(house.bx_test)
+
+averaged_models.fit(house.bx_train.values, house.by_train)
+prediction = averaged_models.predict(house.bx_test)
+
 submission = pd.DataFrame()
-submission['Id'] = house.bx_test.Id
+submission['Id'] = house.bx_test_ids
 submission['SalePrice'] = np.expm1(prediction)
 submission.to_csv('submission.csv',index=False)
 submission
+
+
+class AveragingModels(BaseEstimator, RegressorMixin, TransformerMixin):
+     def __init__(self, models):
+         self.models = models
+
+     # we define clones of the original models to fit the data in
+     def fit(self, X, y):
+         self.models_ = [clone(x) for x in self.models]
+
+         # Train cloned base models
+         for model in self.models_:
+             model.fit(X, y)
+
+         return self
+
+     #Now we do the predictions for cloned models and average them
+     def predict(self, X):
+         predictions = np.column_stack([
+             model.predict(X) for model in self.models_
+         ])
+         return np.mean(predictions, axis=1)
+
+
+averaged_models = AveragingModels(models = (ENet, GBoost, lasso ))
+
+score = rmsle_cv(averaged_models)
+print(" Averaged base models score: {:.4f} ({:.4f})\n".format(score.mean(), score.std()))

@@ -7,6 +7,8 @@ import matplotlib.pyplot as plt
 from statsmodels.formula.api import ols
 import statsmodels.api as sm
 from  statsmodels.genmod import generalized_linear_model
+from scipy.stats import skew
+from scipy.special import boxcox1p
 
 import missingno as msno
 
@@ -25,7 +27,7 @@ class House():
     def __init__(self, train_data_file, test_data_file):
         train = pd.read_csv(train_data_file)
         test = pd.read_csv(test_data_file)
-        self.all = pd.concat([train,test], ignore_index=True)
+        self.all = pd.concat([train,test], ignore_index=True, sort=True)
         self.all['test'] = self.all.SalePrice.isnull()
 
     def train(self):
@@ -92,6 +94,7 @@ class House():
 
     def remove_outliers(self):
         self.all = self.all.drop(self.all[(self.all['GrLivArea']>4000) & (self.all['SalePrice']<300000)].index)
+        #self.all = self.all.drop(self.all[(self.all['LotFrontage']>150)].index)
 
     def distribution_charts(self):
         for column in self.all.columns:
@@ -221,9 +224,28 @@ class House():
                 print("assigning " + house_variable_name + " as type " + house_variable_value['dtype'])
                 self.all[house_variable_name] = self.all[house_variable_name].astype(house_variable_value['dtype'])
 
+    def log_skew(self):
+        #Refresh the index of the numerical features
+        numeric_feats = self.all.dtypes[self.all.dtypes != "object"].index
+
+        #Calculate skewness
+        skewed_feats = self.all[numeric_feats].apply(lambda x: skew(x.dropna())).sort_values(ascending=False)
+        print("\nSkew in numerical features: \n")
+        skewness = pd.DataFrame({'Skew' :skewed_feats})
+        print(skewness.head(10))
+
+        #exctract the features with skewness higher than 75%
+        skewness = skewness[abs(skewness) > 0.75]
+        print("There are {} skewed numerical features to Box Cox transform".format(skewness.shape[0]))
+        skewed_features = skewness.index
+        lam = 0.15
+        for feat in skewed_features:
+            self.all[feat] = boxcox1p(self.all[feat], lam).astype('float64')
+
+    def add_features(self):
+        self.all['TotalSF'] = self.all['TotalBsmtSF'] + self.all['1stFlrSF'] + self.all['2ndFlrSF']
 
     def ordinal_features(self, house_config):
-        # General Dummification
         self.categorical_columns = [x for x in self.all.columns if self.all[x].dtype == 'object' ]
         self.non_categorical_columns = [x for x in self.all.columns if self.all[x].dtype != 'object' ]
 
@@ -250,12 +272,12 @@ class House():
                 self.encoded_all[c] = lce.fit_transform(self.encoded_all[c])
         self.save_test_train_data()
 
-
     def save_test_train_data(self):
         self.bx_train = self.encoded_all[~self.encoded_all['test']].drop(['test','SalePrice'], axis=1)
         self.by_train = self.encoded_all[~self.encoded_all['test']].SalePrice
 
         self.bx_test = self.encoded_all[self.encoded_all['test']].drop(['test','SalePrice'], axis=1)
+
 
 
     def sale_price_charts(self):
@@ -312,13 +334,4 @@ class House():
         #plt.plot([min(self.y_test), max(self.y_test)], [min(self.y_test), max(self.y_test)])
         #plt.tight_layout()
 
-
         print(self.rmse_cv(model_rf, self.x_train, self.y_train))
-
-    def xgboost(self):
-        self.test_train_split()
-
-        self.dtrain = xgb.DMatrix(self.x_train, label = self.y_train)
-        self.dtest = xgb.DMatrix(self.x_train)
-        params = {"max_depth":2, "eta":0.1}
-        model = xgb.cv(params, dtrain,  num_boost_round=500, early_stopping_rounds=100)
