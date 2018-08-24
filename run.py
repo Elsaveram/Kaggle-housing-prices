@@ -18,11 +18,14 @@ house.clean()
 # Convert types after clenaing and filling in all NAs
 house.convert_types(HOUSE_CONFIG)
 ##Feature Engeneneering:
-house.engineer_features(HOUSE_CONFIG)
-house.xgboost
-house.sk_random_forest(1000)
+house.ordinal_features(HOUSE_CONFIG)
+house.one_hot_features()
+house.label_encode()
+#house.engineer_features(HOUSE_CONFIG)
 #%%
 
+house.xgboost()
+house.sk_random_forest(1000)
 #Save processed data frames
 house.dummy_train.to_csv('dummy_clean_Rachel')
 

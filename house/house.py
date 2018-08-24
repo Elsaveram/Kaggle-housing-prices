@@ -16,7 +16,9 @@ from sklearn.metrics import confusion_matrix, roc_auc_score
 from sklearn.model_selection import cross_val_score
 from sklearn.cross_validation import train_test_split
 from sklearn.ensemble import GradientBoostingRegressor
+from sklearn.preprocessing import LabelEncoder
 import xgboost as xgb
+from LabelClassEncoder import *
 
 # A class to hold our housing data
 class House():
@@ -25,8 +27,6 @@ class House():
         test = pd.read_csv(test_data_file)
         self.all = pd.concat([train,test], ignore_index=True)
         self.all['test'] = self.all.SalePrice.isnull()
-        self.Id=self.all.Id
-        self.all
 
     def train(self):
         return(self.all[~self.all['test']])
@@ -90,6 +90,8 @@ class House():
             print(pd.DataFrame(np.sum(self.all[col_missing].isnull())))
             print(np.sum(self.all[col_missing].isnull())*100/self.all[col_missing].shape[0])
 
+    def remove_outliers(self):
+        self.all = self.all.drop(self.all[(self.all['GrLivArea']>4000) & (self.all['SalePrice']<300000)].index)
 
     def distribution_charts(self):
         for column in self.all.columns:
@@ -147,6 +149,9 @@ class House():
         columns_with_missing_data=[name for name in self.all.columns if np.sum(self.all[name].isnull()) !=0]
         columns_with_missing_data.remove('SalePrice')
 
+        self.bx_test_ids = self.all[self.all['test']].Id
+        self.all.drop('Id', axis=1, inplace=True)
+
         for column in columns_with_missing_data:
             col_data = self.all[column]
             print( 'Cleaning ' + str(np.sum(col_data.isnull())) + ' data entries for column: ' + column )
@@ -159,7 +164,7 @@ class House():
                 self.all.loc[self.all['GarageYrBlt'].isnull(),'GarageYrBlt'] = self.all['YearBuilt'].loc[missing_grage_yr]
                 self.all['GarageYrBlt'] = [0 if x == 'NA' else x for x in self.all['GarageYrBlt']]
             elif column == 'LotFrontage':
-                self.all[column].fillna(self.all[column].mean(),inplace=True)
+                self.all["LotFrontage"] = self.all.groupby("LotShape")["LotFrontage"].transform(lambda x: x.fillna(x.median()))
             elif column == 'GarageYrBlt':
                 # TBD: One house has a detached garage that could be caclulatd based on the year of construction.
                 self.all[column] = [ 'NA' if pd.isnull(x) else x for x in self.all[column]]
@@ -217,13 +222,13 @@ class House():
                 self.all[house_variable_name] = self.all[house_variable_name].astype(house_variable_value['dtype'])
 
 
-    def engineer_features(self, house_config):
+    def ordinal_features(self, house_config):
         # General Dummification
-        categorical_columns = [x for x in self.all.columns if self.all[x].dtype == 'object' ]
-        non_categorical_columns = [x for x in self.all.columns if self.all[x].dtype != 'object' ]
+        self.categorical_columns = [x for x in self.all.columns if self.all[x].dtype == 'object' ]
+        self.non_categorical_columns = [x for x in self.all.columns if self.all[x].dtype != 'object' ]
 
         # TBD: do something with ordinals!!!!!
-        for column in categorical_columns:
+        for column in self.categorical_columns:
             for member_name, member_dict in house_config[column]['members'].items():
                 if member_dict['ordinal'] != 0:
                     print( "Replacing " + member_name + " with " + str(member_dict['ordinal']) + " in column " + column)
@@ -231,13 +236,26 @@ class House():
 
             #print( "Column " + column + " now has these unique values " + ' '.join(self.all[column].unique()))
 
-        use_columns = non_categorical_columns + categorical_columns
-        self.dummy_train = pd.get_dummies(self.all[use_columns], drop_first=True, dummy_na=True)
+    def one_hot_features(self):
+        self.use_columns = self.non_categorical_columns + self.categorical_columns
+        self.encoded_all = pd.get_dummies(self.all[self.use_columns], drop_first=True, dummy_na=True)
+        self.save_test_train_data()
 
-        self.bx_train = self.dummy_train[~self.dummy_train['test']].drop(['test','SalePrice'], axis=1)
-        self.by_train = self.dummy_train[~self.dummy_train['test']].SalePrice
 
-        self.bx_test = self.dummy_train[self.dummy_train['test']].drop(['test','SalePrice'], axis=1)
+    def label_encode(self):
+        self.encoded_all = self.all.copy()
+        for c in self.encoded_all.columns:
+            if self.encoded_all[c].dtype == 'object':
+                lce = LabelCountEncoder()
+                self.encoded_all[c] = lce.fit_transform(self.encoded_all[c])
+        self.save_test_train_data()
+
+
+    def save_test_train_data(self):
+        self.bx_train = self.encoded_all[~self.encoded_all['test']].drop(['test','SalePrice'], axis=1)
+        self.by_train = self.encoded_all[~self.encoded_all['test']].SalePrice
+
+        self.bx_test = self.encoded_all[self.encoded_all['test']].drop(['test','SalePrice'], axis=1)
 
 
     def sale_price_charts(self):
@@ -268,9 +286,9 @@ class House():
         print(results.summary())
 
 
-    def test_train_split(self):
-        x=self.dummy_train[~self.dummy_train['test']].drop(['test','SalePrice'], axis=1).astype(object)
-        y=self.dummy_train[~self.dummy_train['test']].SalePrice
+    def test_train_split(self, dataset):
+        x=dataset[~dataset['test']].drop(['test','SalePrice'], axis=1).astype(object)
+        y=dataset[~dataset['test']].SalePrice
         try:
             self.x_train
         except:
@@ -278,8 +296,8 @@ class House():
             self.x_train, self.x_test, self.y_train, self.y_test = train_test_split(x,y)
 
 
-    def sk_random_forest(self,num_est=500):
-        self.test_train_split()
+    def sk_random_forest(self, dataset, num_est=500):
+        self.test_train_split(dataset)
 
         model_rf = RandomForestRegressor(n_estimators=num_est, n_jobs=-1)
         model_rf.fit(self.x_train, self.y_train)
@@ -300,9 +318,7 @@ class House():
     def xgboost(self):
         self.test_train_split()
 
-        model_xgb = xgb.XGBRegressor(colsample_bytree=0.4603, gamma=0.0468,
-                             learning_rate=0.05, max_depth=3,
-                             min_child_weight=1.7817, n_estimators=2200,
-                             reg_alpha=0.4640, reg_lambda=0.8571,
-                             subsample=0.5213, silent=1,
-                             random_state =7, nthread = -1)
+        self.dtrain = xgb.DMatrix(self.x_train, label = self.y_train)
+        self.dtest = xgb.DMatrix(self.x_train)
+        params = {"max_depth":2, "eta":0.1}
+        model = xgb.cv(params, dtrain,  num_boost_round=500, early_stopping_rounds=100)

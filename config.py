@@ -40,7 +40,7 @@ HOUSE_CONFIG = {
 	"LotFrontage": {
 		"description": "Linear feet of street connected to property",
 		"dtype": "float64",
-		"imputation_method": "mean()",
+		"imputation_method": "",
 		"members": {
 		}
 	},
