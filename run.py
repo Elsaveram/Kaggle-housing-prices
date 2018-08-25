@@ -20,7 +20,7 @@ house.clean()
 # Convert types after clenaing and filling in all NAs
 house.convert_types(HOUSE_CONFIG)
 house.add_features()
-house.log_skew()
+house.box_cox()
 house.all
 ##Feature Engeneneering:
 house.ordinal_features(HOUSE_CONFIG)

@@ -159,13 +159,11 @@ class House():
             col_data = self.all[column]
             print( 'Cleaning ' + str(np.sum(col_data.isnull())) + ' data entries for column: ' + column )
 
-            if column == 'Electrical':
-                # TBD: Impute based on a distribution
-                self.all[column] = [ 'SBrkr' if pd.isnull(x) else x for x in self.all[column]]
+            if column in ['Electrical']:
+                self.all[column] = [ self.all[column].mode()[0] if pd.isnull(x) else x for x in self.all[column]]
             elif  column=='GarageYrBlt':
-                missing_grage_yr=self.all[self.all['GarageYrBlt'].isnull()].index
-                self.all.loc[self.all['GarageYrBlt'].isnull(),'GarageYrBlt'] = self.all['YearBuilt'].loc[missing_grage_yr]
-                self.all['GarageYrBlt'] = [0 if x == 'NA' else x for x in self.all['GarageYrBlt']]
+                self.all[column] = [0 if pd.isnull(x) else x for x in self.all['GarageYrBlt']]
+                self.all[column] = [0 if x == 'NA' else x for x in self.all['GarageYrBlt']]
             elif column == 'LotFrontage':
                 self.all["LotFrontage"] = self.all.groupby("LotShape")["LotFrontage"].transform(lambda x: x.fillna(x.median()))
             elif column == 'GarageYrBlt':
@@ -173,47 +171,10 @@ class House():
                 self.all[column] = [ 'NA' if pd.isnull(x) else x for x in self.all[column]]
             elif column in ['BsmtFinSF1','BsmtFinSF2','BsmtFullBath','BsmtHalfBath','BsmtUnfSF','TotalBsmtSF','GarageCars','GarageArea','MasVnrArea']:
                 self.all[column] = [ 0 if pd.isnull(x) else x for x in self.all[column]]
+            #elif column == 'Functional':
+                self.all[column] = [ 'Typ' if pd.isnull(x) else x for x in self.all[column]]
             elif col_data.dtype == 'object':
                 self.all[column] = [ "None" if pd.isnull(x) else x for x in self.all[column]]
-            else:
-                print( 'Uh oh!!! No cleaning strategy for:' + column )
-
-
-    def cleanRP(self):
-        NoneOrZero=['BsmtQual','BsmtCond','BsmtExposure','BsmtFinType1',
-                'BsmtFinType2','BsmtFinSF1','BsmtFinSF2','Alley',
-               'Fence','GarageType','GarageQual',
-               'GarageCond','GarageFinish','GarageCars',
-                'GarageArea','MasVnrArea','MasVnrType','MiscFeature','PoolQC',
-                'BsmtFullBath', 'BsmtHalfBath', 'BsmtUnfSF']
-        mode=['Electrical','Exterior1st','Exterior2nd','FireplaceQu','Functional','KitchenQual','MSZoning','SaleType','Utilities']
-        mean=['TotalBsmtSF']
-        columns_with_missing_data=[name for name in self.all.columns if np.sum(self.all[name].isnull()) !=0]
-        columns_with_missing_data.remove('SalePrice')
-        for column in columns_with_missing_data:
-            col_data = self.all[column]
-            print( 'Cleaning ' + str(np.sum(col_data.isnull())) + ' data entries for column: ' + column )
-
-        #log transformation for missing LotFrontage
-            if  column=='LotFrontage':
-                y1=np.log(self.all['LotArea'])
-                index=self.all[self.all['LotFrontage'].isnull()].index
-                self.all.loc[self.all['LotFrontage'].isnull(),'LotFrontage'] = y1.loc[index]
-            #imputing the value of YearBuiltto the GarageYrBlt.
-            elif  column=='GarageYrBlt':
-                missing_grage_yr=self.all[self.all['GarageYrBlt'].isnull()].index
-                self.all.loc[self.all['GarageYrBlt'].isnull(),'GarageYrBlt'] = self.all['YearBuilt'].loc[missing_grage_yr]
-
-            elif column in mode:
-                self.all[column] = [self.all[column].mode()[0] if pd.isnull(x) else x for x in self.all[column]]
-            elif column in mean:
-                self.all[column].fillna(self.all[column].mean(),inplace=True)
-            elif column in NoneOrZero:
-                if col_data.dtype == 'object':
-                    no_string = 'None'
-                    self.all[column] = [ no_string if pd.isnull(x) else x for x in self.all[column]]
-                else:
-                    self.all[column] = [ 0 if pd.isnull(x) else x for x in self.all[column]]
             else:
                 print( 'Uh oh!!! No cleaning strategy for:' + column )
 
@@ -223,24 +184,6 @@ class House():
             if len(house_variable_value['dtype']) != 0:
                 print("assigning " + house_variable_name + " as type " + house_variable_value['dtype'])
                 self.all[house_variable_name] = self.all[house_variable_name].astype(house_variable_value['dtype'])
-
-    def log_skew(self):
-        #Refresh the index of the numerical features
-        numeric_feats = self.all.dtypes[self.all.dtypes != "object"].index
-
-        #Calculate skewness
-        skewed_feats = self.all[numeric_feats].apply(lambda x: skew(x.dropna())).sort_values(ascending=False)
-        print("\nSkew in numerical features: \n")
-        skewness = pd.DataFrame({'Skew' :skewed_feats})
-        print(skewness.head(10))
-
-        #exctract the features with skewness higher than 75%
-        skewness = skewness[abs(skewness) > 0.75]
-        print("There are {} skewed numerical features to Box Cox transform".format(skewness.shape[0]))
-        skewed_features = skewness.index
-        lam = 0.15
-        for feat in skewed_features:
-            self.all[feat] = boxcox1p(self.all[feat], lam)
 
     def add_features(self):
         self.all['TotalSF'] = self.all['TotalBsmtSF'] + self.all['1stFlrSF'] + self.all['2ndFlrSF']
@@ -264,7 +207,8 @@ class House():
         self.save_test_train_data()
 
 
-    def label_encode(self):
+    def label_encode(self, cols=[]):
+        # TBD: Take the cols as input if we want to mix label and one hot encoding.
         self.encoded_all = self.all.copy()
         for c in self.encoded_all.columns:
             if self.encoded_all[c].dtype == 'object':
@@ -279,7 +223,24 @@ class House():
 
         self.bx_test = self.encoded_all[self.encoded_all['test']].drop(['test','SalePrice'], axis=1)
 
+    def box_cox(self):
+        #Refresh the index of the numerical features
+        numeric_feats = self.all.dtypes[self.all.dtypes != "object"].index
 
+        #Calculate skewness
+        skewed_feats = self.all[numeric_feats].drop(['test','SalePrice'], axis=1).apply(lambda x: skew(x.dropna())).sort_values(ascending=False)
+        print("\nSkew in numerical features: \n")
+        skewness = pd.DataFrame({'Skew' :skewed_feats})
+        print(skewness.head(10))
+
+        #exctract the features with skewness higher than 75%
+        skewness = skewness[abs(skewness) > 0.75]
+        print("There are {} skewed numerical features to Box Cox transform".format(skewness.shape[0]))
+        skewed_features = skewness.index
+        lam = 0.15
+        for feat in skewed_features:
+            print(feat)
+            self.all[feat] = boxcox1p(self.all[feat], lam)
 
     def sale_price_charts(self):
         for i, column in enumerate(self.all.columns):
