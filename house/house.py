@@ -187,8 +187,6 @@ class House():
 
     def add_features(self):
         self.all['TotalSF'] = self.all['1stFlrSF'] + self.all['2ndFlrSF']
-        self.all['BadPorch'] = [ True if x > 0 else False for x in self.all['3SsnPorch'] ]
-
         self.drop_columns = []
 
 
