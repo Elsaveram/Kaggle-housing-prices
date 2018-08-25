@@ -654,12 +654,12 @@ HOUSE_CONFIG = {
 		"dtype": "",
 		"imputation_method": "",
 		"members": {
-			"Ex": { "ordinal":0, "name":"Excellent - Exceptional Masonry Fireplace"},
-			"Gd": { "ordinal":0, "name":"Good - Masonry Fireplace in main level"},
-			"TA": { "ordinal":0, "name":"Average - Prefabricated Fireplace in main living area or Masonry Fireplace in basement"},
-			"Fa": { "ordinal":0, "name":"Fair - Prefabricated Fireplace in basement"},
-			"Po": { "ordinal":0, "name":"Poor - Ben Franklin Stove"},
-			"NA": { "ordinal":0, "name":"No Fireplace"},
+			"Ex": { "ordinal":5, "name":"Excellent - Exceptional Masonry Fireplace"},
+			"Gd": { "ordinal":3, "name":"Good - Masonry Fireplace in main level"},
+			"TA": { "ordinal":3, "name":"Average - Prefabricated Fireplace in main living area or Masonry Fireplace in basement"},
+			"Fa": { "ordinal":2, "name":"Fair - Prefabricated Fireplace in basement"},
+			"Po": { "ordinal":1, "name":"Poor - Ben Franklin Stove"},
+			"None": { "ordinal":1, "name":"No Fireplace"},
 		}
 	},
 	"GarageType": {
@@ -673,13 +673,13 @@ HOUSE_CONFIG = {
 			"BuiltIn": { "ordinal":0, "name":"Built-In (Garage part of house - typically has room above garage)"},
 			"CarPort": { "ordinal":0, "name":"Car Port"},
 			"Detchd": { "ordinal":0, "name":"Detached from home"},
-			"NA": { "ordinal":0, "name":"No Garage"},
+			"None": { "ordinal":0, "name":"No Garage"},
 		}
 	},
 	"GarageYrBlt": {
 		"description": "Year garage was built",
 		"dtype": "",
-		"imputation_method": "NA",
+		"imputation_method": "None",
 		"members": {
 		}
 	},
@@ -796,7 +796,7 @@ HOUSE_CONFIG = {
 			"TA": { "ordinal":3, "name":"Average/Typical"},
 			"Fa": { "ordinal":2, "name":"Fair"},
 			"None": { "ordinal":0, "name":"No Pool"},
-			"Na": { "ordinal":0, "name":"No Pool"},
+			"NA": { "ordinal":0, "name":"No Pool"},
 		}
 	},
 	"Fence": {
@@ -808,7 +808,7 @@ HOUSE_CONFIG = {
 			"MnPrv": { "ordinal":0, "name":"Minimum Privacy"},
 			"GdWo": { "ordinal":0, "name":"Good Wood"},
 			"MnWw": { "ordinal":0, "name":"Minimum Wood/Wire"},
-			"NA": { "ordinal":0, "name":"No Fence"},
+			"None": { "ordinal":0, "name":"No Fence"},
 		}
 	},
 	"MiscFeature": {
@@ -821,7 +821,7 @@ HOUSE_CONFIG = {
 			"Othr": { "ordinal":0, "name":"Other"},
 			"Shed": { "ordinal":0, "name":"Shed (over 100 SF)"},
 			"TenC": { "ordinal":0, "name":"Tennis Court"},
-			"NA": { "ordinal":0, "name":"None"},
+			"None": { "ordinal":0, "name":"None"},
 		}
 	},
 	"MiscVal": {
@@ -833,14 +833,14 @@ HOUSE_CONFIG = {
 	},
 	"MoSold": {
 		"description": "Month Sold (MM)",
-		"dtype": "",
+		"dtype": "object",
 		"imputation_method": "",
 		"members": {
 		}
 	},
 	"YrSold": {
 		"description": "Year Sold (YYYY)",
-		"dtype": "",
+		"dtype": "object",
 		"imputation_method": "",
 		"members": {
 		}
