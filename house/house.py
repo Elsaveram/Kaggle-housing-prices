@@ -27,7 +27,7 @@ class House():
     def __init__(self, train_data_file, test_data_file):
         train = pd.read_csv(train_data_file)
         test = pd.read_csv(test_data_file)
-        self.all = pd.concat([train,test], ignore_index=True, sort=True)
+        self.all = pd.concat([train,test], ignore_index=True)
         self.all['test'] = self.all.SalePrice.isnull()
 
     def train(self):
@@ -157,7 +157,7 @@ class House():
 
         for column in columns_with_missing_data:
             col_data = self.all[column]
-            print( 'Cleaning ' + str(np.sum(col_data.isnull())) + ' data entries for column: ' + column )
+            #print( 'Cleaning ' + str(np.sum(col_data.isnull())) + ' data entries for column: ' + column )
 
             if column in ['Electrical']:
                 self.all[column] = [ self.all[column].mode()[0] if pd.isnull(x) else x for x in self.all[column]]
@@ -165,13 +165,13 @@ class House():
                 self.all[column] = [0 if pd.isnull(x) else x for x in self.all['GarageYrBlt']]
                 self.all[column] = [0 if x == 'NA' else x for x in self.all['GarageYrBlt']]
             elif column == 'LotFrontage':
-                self.all["LotFrontage"] = self.all.groupby("LotShape")["LotFrontage"].transform(lambda x: x.fillna(x.median()))
+                self.all["LotFrontage"] = self.all.groupby("Neighborhood")["LotFrontage"].transform(lambda x: x.fillna(x.median()))
             elif column == 'GarageYrBlt':
                 # TBD: One house has a detached garage that could be caclulatd based on the year of construction.
                 self.all[column] = [ 'NA' if pd.isnull(x) else x for x in self.all[column]]
             elif column in ['BsmtFinSF1','BsmtFinSF2','BsmtFullBath','BsmtHalfBath','BsmtUnfSF','TotalBsmtSF','GarageCars','GarageArea','MasVnrArea']:
                 self.all[column] = [ 0 if pd.isnull(x) else x for x in self.all[column]]
-            #elif column == 'Functional':
+            elif column == 'Functional':
                 self.all[column] = [ 'Typ' if pd.isnull(x) else x for x in self.all[column]]
             elif col_data.dtype == 'object':
                 self.all[column] = [ "None" if pd.isnull(x) else x for x in self.all[column]]
@@ -182,11 +182,15 @@ class House():
     def convert_types(self, house_config):
         for house_variable_name, house_variable_value in house_config.items():
             if len(house_variable_value['dtype']) != 0:
-                print("assigning " + house_variable_name + " as type " + house_variable_value['dtype'])
+                #print("assigning " + house_variable_name + " as type " + house_variable_value['dtype'])
                 self.all[house_variable_name] = self.all[house_variable_name].astype(house_variable_value['dtype'])
 
     def add_features(self):
-        self.all['TotalSF'] = self.all['TotalBsmtSF'] + self.all['1stFlrSF'] + self.all['2ndFlrSF']
+        self.all['TotalSF'] = self.all['1stFlrSF'] + self.all['2ndFlrSF']
+        self.all['BadPorch'] = [ True if x > 0 else False for x in self.all['3SsnPorch'] ]
+
+        self.drop_columns = []
+
 
     def ordinal_features(self, house_config):
         self.categorical_columns = [x for x in self.all.columns if self.all[x].dtype == 'object' ]
@@ -196,7 +200,7 @@ class House():
         for column in self.categorical_columns:
             for member_name, member_dict in house_config[column]['members'].items():
                 if member_dict['ordinal'] != 0:
-                    print( "Replacing " + member_name + " with " + str(member_dict['ordinal']) + " in column " + column)
+                    #print( "Replacing " + member_name + " with " + str(member_dict['ordinal']) + " in column " + column)
                     self.all[column].replace(member_name, member_dict['ordinal'], inplace=True)
 
             #print( "Column " + column + " now has these unique values " + ' '.join(self.all[column].unique()))
@@ -217,18 +221,19 @@ class House():
         self.save_test_train_data()
 
     def save_test_train_data(self):
-        print(self.encoded_all.head())
-        self.bx_train = self.encoded_all[~self.encoded_all['test']].drop(['test','SalePrice'], axis=1)
+        #print(self.encoded_all.head())
+        drop_columns = self.drop_columns + ['test','SalePrice']
+        self.bx_train = self.encoded_all[~self.encoded_all['test']].drop(drop_columns, axis=1)
         self.by_train = self.encoded_all[~self.encoded_all['test']].SalePrice
 
-        self.bx_test = self.encoded_all[self.encoded_all['test']].drop(['test','SalePrice'], axis=1)
+        self.bx_test = self.encoded_all[self.encoded_all['test']].drop(drop_columns, axis=1)
 
     def box_cox(self):
         #Refresh the index of the numerical features
-        numeric_feats = self.all.dtypes[self.all.dtypes != "object"].index
+        numeric_feats = self.all.dtypes[self.all.dtypes == "float64"].index
 
         #Calculate skewness
-        skewed_feats = self.all[numeric_feats].drop(['test','SalePrice'], axis=1).apply(lambda x: skew(x.dropna())).sort_values(ascending=False)
+        skewed_feats = self.all[numeric_feats].drop(['SalePrice'], axis=1).apply(lambda x: skew(x.dropna())).sort_values(ascending=False)
         print("\nSkew in numerical features: \n")
         skewness = pd.DataFrame({'Skew' :skewed_feats})
         print(skewness.head(10))
