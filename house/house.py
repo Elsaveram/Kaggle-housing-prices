@@ -187,10 +187,8 @@ class House():
 
     def add_features(self):
         self.all['TotalSF'] = self.all['1stFlrSF'] + self.all['2ndFlrSF']
-        self.all['BadPorch'] = [ True if x > 0 else False for x in self.all['3SsnPorch'] ]
-
+        #self.all['BadPorch'] = [ True if x > 0 else False for x in self.all['3SsnPorch'] ]
         self.drop_columns = []
-
 
     def ordinal_features(self, house_config):
         self.categorical_columns = [x for x in self.all.columns if self.all[x].dtype == 'object' ]
@@ -239,7 +237,7 @@ class House():
         print(skewness.head(10))
 
         #exctract the features with skewness higher than 75%
-        skewness = skewness[abs(skewness) > 0.75]
+        skewness = skewness[abs(skewness.Skew)>0.75]
         print("There are {} skewed numerical features to Box Cox transform".format(skewness.shape[0]))
         skewed_features = skewness.index
         lam = 0.15

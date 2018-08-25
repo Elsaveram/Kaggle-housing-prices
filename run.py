@@ -21,7 +21,6 @@ house.clean()
 house.convert_types(HOUSE_CONFIG)
 house.add_features()
 house.box_cox()
-house.all
 ##Feature Engeneneering:
 house.ordinal_features(HOUSE_CONFIG)
 #house.label_encode()
@@ -108,7 +107,7 @@ n_folds = 5
 
 def rmsle_cv(model):
     kf = KFold(n_folds, shuffle=True).get_n_splits(house.bx_train.values)
-    rmse= np.sqrt(-cross_val_score(model, house.bx_train.values, house.by_train, scoring="neg_mean_squared_error", cv = kf))
+    rmse= np.sqrt(-cross_val_score(model, house.bx_train.values, house.by_train.values, scoring="neg_mean_squared_error", cv = kf))
     return(rmse)
 
 lasso = make_pipeline(RobustScaler(), Lasso(alpha =0.0005, random_state=1))
@@ -192,8 +191,94 @@ class AveragingModels(BaseEstimator, RegressorMixin, TransformerMixin):
          ])
          return np.mean(predictions, axis=1)
 
-
-averaged_models = AveragingModels(models = (ENet, GBoost, lasso ))
+averaged_models = AveragingModels(models = (ENet, GBoost, lasso))
 
 score = rmsle_cv(averaged_models)
 print(" Averaged base models score: {:.4f} ({:.4f})\n".format(score.mean(), score.std()))
+
+
+class StackingAveragedModels(BaseEstimator, RegressorMixin, TransformerMixin):
+    def __init__(self, base_models, meta_model, n_folds=5):
+        self.base_models = base_models
+        self.meta_model = meta_model
+        self.n_folds = n_folds
+
+    # We again fit the data on clones of the original models
+    def fit(self, X, y):
+        self.base_models_ = [list() for x in self.base_models]
+        self.meta_model_ = clone(self.meta_model)
+        kfold = KFold(n_splits=self.n_folds, shuffle=True, random_state=156)
+        # Train cloned base models then create out-of-fold predictions
+        # that are needed to train the cloned meta-model
+        out_of_fold_predictions = np.zeros((X.shape[0], len(self.base_models)))
+        for i, model in enumerate(self.base_models):
+            for train_index, holdout_index in kfold.split(X, y):
+                instance = clone(model)
+                self.base_models_[i].append(instance)
+                instance.fit(X[train_index], pd.Series(y)[train_index])
+                y_pred = instance.predict(X[holdout_index])
+                out_of_fold_predictions[holdout_index, i] = y_pred
+
+        # Now train the cloned  meta-model using the out-of-fold predictions as new feature
+        self.meta_model_.fit(out_of_fold_predictions, y)
+        return self
+
+    #Do the predictions of all base models on the test data and use the averaged predictions as
+    #meta-features for the final prediction which is done by the meta-model
+    def predict(self, X):
+        meta_features = np.column_stack([
+            np.column_stack([model.predict(X) for model in base_models]).mean(axis=1)
+            for base_models in self.base_models_ ])
+        return self.meta_model_.predict(meta_features)
+
+stacked_averaged_models = StackingAveragedModels(base_models = (ENet, GBoost, KRR),
+                                                 meta_model = lasso)
+
+score = rmsle_cv(stacked_averaged_models)
+print("Stacking Averaged models score: {:.4f} ({:.4f})".format(score.mean(), score.std()))
+
+#
+def rmsle(y, y_pred):
+    return np.sqrt(mean_squared_error(y, y_pred))
+
+#Stacked Regressor
+stacked_averaged_models.fit(house.bx_train.values, house.by_train.values)
+stacked_train_pred = stacked_averaged_models.predict(house.bx_train.values)
+stacked_pred = np.expm1(stacked_averaged_models.predict(house.bx_test))
+print(rmsle(house.by_train.values, stacked_train_pred))
+
+#Xgboost
+model_xgb.fit(house.bx_train.values, house.by_train)
+xgb_train_pred = model_xgb.predict(house.bx_train.values)
+xgb_pred = np.expm1(model_xgb.predict(house.bx_test.values))
+print(rmsle(house.by_train, xgb_train_pred))
+
+#Gboost
+GBoost.fit(house.bx_train.values, house.by_train)
+Gboost_train_pred = GBoost.predict(house.bx_train.values)
+Gboost_pred = np.expm1(GBoost.predict(house.bx_test.values))
+print(rmsle(house.by_train, Gboost_train_pred))
+
+#DF predictions predictions
+ols_df=pd.DataFrame()
+ols_df['stacked_pred']=stacked_pred
+ols_df['xgb_pred']=xgb_pred
+ols_df['Gboost_pred']=Gboost_pred
+submission['SalePrice'] = np.expm1(prediction)
+
+#OLS
+from sklearn import linear_model
+ols = linear_model.LinearRegression()
+ols.fit(ols_df, y_m)
+print("beta_1, beta_2: " + str(np.round(ols.coef_, 3)))
+print("beta_0: " + str(np.round(ols.intercept_, 3)))
+print("RSS: %.2f" % np.sum((ols.predict(x_m) - y_m) ** 2))
+print("R^2: %.5f" % ols.score(x_m, y_m))
+#Ensemble
+ensemble = stacked_pred*0.70 + xgb_pred*0.15 + Gboost_pred*0.15
+
+#submission
+sub = pd.DataFrame()
+sub['Id'] = house.bx_test_ids
+sub['SalePrice'] = ensemble
+sub.to_csv('submission.csv',index=False)
