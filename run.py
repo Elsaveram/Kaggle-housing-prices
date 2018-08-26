@@ -74,6 +74,17 @@ gboost_prediction = house.fit_and_predict(GBoost)
 #xgb_prediction = house.fit_and_predict(model_xgb)
 # %%
 
+from sklearn.model_selection import GridSearchCV
+
+alphas = np.logspace(-5, 2, 30)
+grid = GridSearchCV(estimator=Lasso(),param_grid=dict(alpha=alphas), cv=10, scoring='r2')
+grid.fit(house.bx_train, house.by_train) # entire datasets were fed here
+
+print(grid.best_params_, grid.best_score_)# score -0.0470788758558
+for params, mean_score, scores in grid.grid_scores_:
+    print(mean_score, params)
+
+
 
 # %% Model Averaging
 averaged_models = AveragingModels(models = (ENet, GBoost, lasso))
