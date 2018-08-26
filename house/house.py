@@ -187,10 +187,6 @@ class House():
 
     def add_features(self):
         self.all['TotalSF'] = self.all['1stFlrSF'] + self.all['2ndFlrSF']
-<<<<<<< HEAD
-        #self.all['BadPorch'] = [ True if x > 0 else False for x in self.all['3SsnPorch'] ]
-=======
->>>>>>> a1e1c8948db065f7be1e6b2c946bc940c7ef7a88
         self.drop_columns = []
 
     def ordinal_features(self, house_config):
