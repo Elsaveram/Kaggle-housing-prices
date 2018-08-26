@@ -84,6 +84,30 @@ print(grid.best_params_, grid.best_score_)# score -0.0470788758558
 for params, mean_score, scores in grid.grid_scores_:
     print(mean_score, params)
 
+import pandas as pd
+import matplotlib
+feature_importances = pd.DataFrame(model_rf.feature_importances_,
+                                   index = house.bx_train.columns,
+                                    columns=['importance']).sort_values('importance', ascending=False)
+
+top_30 = feature_importances.head(30).index.tolist()
+
+data = house.bx_train[top_30]
+lasso = Lasso()
+alphas_lasso = np.logspace(-4, 2, 100)
+coef_lasso = []
+for i in alphas_lasso:
+    lasso.set_params(alpha = i).fit(data, house.by_train)
+    coef_lasso.append(lasso.coef_)
+
+df_coef = pd.DataFrame(coef_lasso, index=alphas_lasso, columns=data.columns)
+title = 'Lasso coefficients as a function of the regularization'
+matplotlib.rcParams['figure.figsize'] = [12, 16]
+fig, ax = plt.subplots( nrows=1, ncols=1 )
+ax = df_coef.plot(logx=True, title=title)
+
+fig = ax.get_figure()
+fig.savefig('foo.png')
 
 
 # %% Model Averaging
