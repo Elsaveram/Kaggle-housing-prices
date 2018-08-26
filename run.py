@@ -31,10 +31,6 @@ house.one_hot_features()
 house.sk_random_forest(house.encoded_all, 100)
 
 pd.set_option('display.max_columns', 500)
-house.encoded_all
-
-#Save processed data frames
-house.dummy_train.to_csv('dummy_clean_Rachel')
 
 ##EDA:
 #All variables:
@@ -110,6 +106,8 @@ def rmsle_cv(model):
     rmse= np.sqrt(-cross_val_score(model, house.bx_train.values, house.by_train.values, scoring="neg_mean_squared_error", cv = kf))
     return(rmse)
 
+model_rf = RandomForestRegressor(n_estimators=500, n_jobs=-1)
+
 lasso = make_pipeline(RobustScaler(), Lasso(alpha =0.0005, random_state=1))
 
 ENet = make_pipeline(RobustScaler(), ElasticNet(alpha=0.0005, l1_ratio=.9, random_state=3))
@@ -132,6 +130,9 @@ model_xgb = xgb.XGBRegressor(colsample_bytree=0.4603, gamma=0.0468,
 
 house.by_train = np.log1p(house.by_train)
 
+score = rmsle_cv(model_rf)
+print("\model_rf score: {:.4f} ({:.4f})\n".format(score.mean(), score.std()))
+
 score = rmsle_cv(lasso)
 print("\nLasso score: {:.4f} ({:.4f})\n".format(score.mean(), score.std()))
 
@@ -147,6 +148,9 @@ print("Gradient Boosting score: {:.4f} ({:.4f})\n".format(score.mean(), score.st
 score = rmsle_cv(model_xgb)
 print("Xgboost score: {:.4f} ({:.4f})\n".format(score.mean(), score.std()))
 # %%
+
+model_rf.fit(house.bx_train.values, house.by_train)
+self.rf_pred = model_rf.predict(house.bx_test)
 
 lasso.fit(house.bx_train.values, house.by_train)
 prediction = lasso.predict(house.bx_test)
@@ -169,7 +173,7 @@ submission['SalePrice'] = np.expm1(prediction)
 submission.to_csv('submission.csv',index=False)
 submission
 
-
+# Averaging models
 class AveragingModels(BaseEstimator, RegressorMixin, TransformerMixin):
      def __init__(self, models):
          self.models = models
@@ -237,7 +241,7 @@ stacked_averaged_models = StackingAveragedModels(base_models = (ENet, GBoost, KR
 score = rmsle_cv(stacked_averaged_models)
 print("Stacking Averaged models score: {:.4f} ({:.4f})".format(score.mean(), score.std()))
 
-#
+
 def rmsle(y, y_pred):
     return np.sqrt(mean_squared_error(y, y_pred))
 
@@ -253,29 +257,29 @@ xgb_train_pred = model_xgb.predict(house.bx_train.values)
 xgb_pred = np.expm1(model_xgb.predict(house.bx_test.values))
 print(rmsle(house.by_train, xgb_train_pred))
 
-#Gboost
-GBoost.fit(house.bx_train.values, house.by_train)
-Gboost_train_pred = GBoost.predict(house.bx_train.values)
-Gboost_pred = np.expm1(GBoost.predict(house.bx_test.values))
-print(rmsle(house.by_train, Gboost_train_pred))
+#Rforest
+model_rf.fit(house.bx_train.values, house.by_train)
+model_rf_train_pred = model_rf.predict(house.bx_train.values)
+model_rf_pred = np.expm1(model_rf.predict(house.bx_test.values))
+print(rmsle(house.by_train, model_rf_train_pred))
 
 #DF predictions predictions
 ols_df=pd.DataFrame()
-ols_df['stacked_pred']=stacked_pred
-ols_df['xgb_pred']=xgb_pred
-ols_df['Gboost_pred']=Gboost_pred
-submission['SalePrice'] = np.expm1(prediction)
+ols_df['stacked_pred']=stacked_train_pred
+ols_df['xgb_pred']=xgb_train_pred
+ols_df['rf_pred']=model_rf_train_pred
 
 #OLS
 from sklearn import linear_model
 ols = linear_model.LinearRegression()
-ols.fit(ols_df, y_m)
+ols.fit(ols_df, house.by_train)
 print("beta_1, beta_2: " + str(np.round(ols.coef_, 3)))
 print("beta_0: " + str(np.round(ols.intercept_, 3)))
-print("RSS: %.2f" % np.sum((ols.predict(x_m) - y_m) ** 2))
-print("R^2: %.5f" % ols.score(x_m, y_m))
+print("RSS: %.2f" % np.sum((ols.predict(ols_df) - house.by_train) ** 2))
+print("R^2: %.5f" % ols.score(ols_df, house.by_train))
+
 #Ensemble
-ensemble = stacked_pred*0.70 + xgb_pred*0.15 + Gboost_pred*0.15
+ensemble = -0.577 + stacked_pred*(-0.03) + xgb_pred*(-0.251) + model_rf_pred*1.329
 
 #submission
 sub = pd.DataFrame()
