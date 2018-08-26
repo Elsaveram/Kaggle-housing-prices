@@ -100,6 +100,9 @@ score = house.rmsle_cv(stacked_averaged_models)
 print("Stacking Averaged models score: {:.4f} ({:.4f})".format(score.mean(), score.std()))
 # %%
 
+
+
+from sklearn.metrics import mean_squared_error
 def rmsle(y, y_pred):
     return np.sqrt(mean_squared_error(y, y_pred))
 
