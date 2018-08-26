@@ -147,6 +147,7 @@ fig.savefig("output.png")
 
 
 
+pd.set_option('display.max_columns', 500)
 
 
 
@@ -166,3 +167,41 @@ var = 'Neighborhood'
 data = pd.concat([house.all['LotFrontage'], house.all[var]], axis=1)
 sns.mpl.rc("figure", figsize=(14,6))
 sns.boxplot(x=var, y="LotFrontage", data=data)
+
+
+
+
+##EDA:
+#All variables:
+house.all.shape
+house.all.head()
+house.all.dtypes
+
+house.test().shape
+house.train().shape
+
+#Response varriable:
+house.train().SalePrice.describe()
+house.log_transform(house.train().SalePrice)
+house.corr_matrix(house.train(), 'SalePrice')
+
+# Show Missing values:
+house.missing_stats()
+
+# Show how data is distributed
+house.distribution_charts()
+
+# How does each of our variables relate to sale price?
+house.sale_price_charts()
+
+# Understand the Lot Frontage/Area/Config relationship
+house.relation_stats('LotFrontage', 'LotArea', 'LotConfig')
+
+# TBD
+
+
+
+def distskew(dataset, feature):
+    fig = plt.figure()
+    sns.distplot(dataset[feature], fit=norm);
+    return("Skewness = ",skew(dataset[feature].dropna()))

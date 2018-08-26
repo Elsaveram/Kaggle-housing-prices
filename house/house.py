@@ -1,33 +1,33 @@
 import numpy as np
 import pandas as pd
 import seaborn as sns
-
 import matplotlib.pyplot as plt
+import statsmodels.api as sm
+import missingno as msno
+import xgboost as xgb
 
 from statsmodels.formula.api import ols
-import statsmodels.api as sm
-from  statsmodels.genmod import generalized_linear_model
+from statsmodels.genmod import generalized_linear_model
+
 from scipy.stats import skew
 from scipy.special import boxcox1p
-
-import missingno as msno
 
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import confusion_matrix, roc_auc_score
-from sklearn.model_selection import cross_val_score
+from sklearn.model_selection import cross_val_score, KFold
 from sklearn.cross_validation import train_test_split
 from sklearn.ensemble import GradientBoostingRegressor
 from sklearn.preprocessing import LabelEncoder
-import xgboost as xgb
-from LabelClassEncoder import *
+from sklearn.base import BaseEstimator, TransformerMixin, RegressorMixin, clone
+
 
 # A class to hold our housing data
 class House():
     def __init__(self, train_data_file, test_data_file):
         train = pd.read_csv(train_data_file)
         test = pd.read_csv(test_data_file)
-        self.all = pd.concat([train,test], ignore_index=True)
+        self.all = pd.concat([train,test], ignore_index=True, sort=True)
         self.all['test'] = self.all.SalePrice.isnull()
 
     def train(self):
@@ -193,7 +193,6 @@ class House():
         self.categorical_columns = [x for x in self.all.columns if self.all[x].dtype == 'object' ]
         self.non_categorical_columns = [x for x in self.all.columns if self.all[x].dtype != 'object' ]
 
-        # TBD: do something with ordinals!!!!!
         for column in self.categorical_columns:
             for member_name, member_dict in house_config[column]['members'].items():
                 if member_dict['ordinal'] != 0:
@@ -217,13 +216,15 @@ class House():
                 self.encoded_all[c] = lce.fit_transform(self.encoded_all[c])
         self.save_test_train_data()
 
+
     def save_test_train_data(self):
         #print(self.encoded_all.head())
         drop_columns = self.drop_columns + ['test','SalePrice']
         self.bx_train = self.encoded_all[~self.encoded_all['test']].drop(drop_columns, axis=1)
-        self.by_train = self.encoded_all[~self.encoded_all['test']].SalePrice
+        self.by_train = np.log1p(self.encoded_all[~self.encoded_all['test']].SalePrice)
 
         self.bx_test = self.encoded_all[self.encoded_all['test']].drop(drop_columns, axis=1)
+
 
     def box_cox(self):
         #Refresh the index of the numerical features
@@ -244,6 +245,7 @@ class House():
             print(feat)
             self.all[feat] = boxcox1p(self.all[feat], lam)
 
+
     def sale_price_charts(self):
         for i, column in enumerate(self.all.columns):
             plt.figure(i)
@@ -259,10 +261,6 @@ class House():
                 fig = sns.boxplot(x=var, y="SalePrice", data=data)
                 fig.axis(ymin=0, ymax=800000)
 
-    def rmse_cv(self,model, x, y, k=5):
-        rmse = np.sqrt(-cross_val_score(model, x, y, scoring="neg_mean_squared_log_error", cv = k))
-        return(np.mean(rmse))
-
 
     def statsmodel_linear_regression(self,y=['SalePrice'], X=['GrLivArea']):
         x = sm.add_constant(self.train()[X])
@@ -272,30 +270,81 @@ class House():
         print(results.summary())
 
 
-    def test_train_split(self, dataset):
-        x=dataset[~dataset['test']].drop(['test','SalePrice'], axis=1).astype(object)
-        y=dataset[~dataset['test']].SalePrice
-        try:
-            self.x_train
-        except:
-            print('DOING SPLITS!!!!')
-            self.x_train, self.x_test, self.y_train, self.y_test = train_test_split(x,y)
+    def fit_and_predict(self, model, name=""):
+        model.fit(self.bx_train.values, self.by_train)
+        self.prediction = model.predict(self.bx_test)
+        self.save_last_prediction()
+        return(self.prediction)
 
 
-    def sk_random_forest(self, dataset, num_est=500):
-        self.test_train_split(dataset)
+    def save_last_prediction(self):
+        submission = pd.DataFrame()
+        submission['Id'] = self.bx_test_ids
+        submission['SalePrice'] = np.expm1(self.prediction)
+        file_name = 'submission.csv'
+        submission.to_csv('submission.csv',index=False)
 
-        model_rf = RandomForestRegressor(n_estimators=num_est, n_jobs=-1)
-        model_rf.fit(self.x_train, self.y_train)
-        self.rf_pred = model_rf.predict(self.x_test)
 
-        #plt.figure(figsize=(10, 5))
-        #plt.scatter(self.y_test, self.rf_pred, s=20)
-        #plt.title('Predicted vs. Actual')
-        #plt.xlabel('Actual Sale Price')
-        #plt.ylabel('Predicted Sale Price')
+    def rmsle_cv(self,model,n_folds=5):
+        kf = KFold(n_folds, shuffle=True).get_n_splits(self.bx_train.values)
+        rmse = np.sqrt(-cross_val_score(model, self.bx_train.values, self.by_train.values, scoring="neg_mean_squared_error", cv = kf))
+        return(rmse)
 
-        #plt.plot([min(self.y_test), max(self.y_test)], [min(self.y_test), max(self.y_test)])
-        #plt.tight_layout()
 
-        print(self.rmse_cv(model_rf, self.x_train, self.y_train))
+
+class AveragingModels(BaseEstimator, RegressorMixin, TransformerMixin):
+     def __init__(self, models):
+         self.models = models
+
+     # we define clones of the original models to fit the data in
+     def fit(self, X, y):
+         self.models_ = [clone(x) for x in self.models]
+
+         # Train cloned base models
+         for model in self.models_:
+             model.fit(X, y)
+
+         return self
+
+     #Now we do the predictions for cloned models and average them
+     def predict(self, X):
+         predictions = np.column_stack([
+             model.predict(X) for model in self.models_
+         ])
+         return np.mean(predictions, axis=1)
+
+
+
+class StackingAveragedModels(BaseEstimator, RegressorMixin, TransformerMixin):
+    def __init__(self, base_models, meta_model, n_folds=5):
+        self.base_models = base_models
+        self.meta_model = meta_model
+        self.n_folds = n_folds
+
+    # We again fit the data on clones of the original models
+    def fit(self, X, y):
+        self.base_models_ = [list() for x in self.base_models]
+        self.meta_model_ = clone(self.meta_model)
+        kfold = KFold(n_splits=self.n_folds, shuffle=True, random_state=156)
+        # Train cloned base models then create out-of-fold predictions
+        # that are needed to train the cloned meta-model
+        out_of_fold_predictions = np.zeros((X.shape[0], len(self.base_models)))
+        for i, model in enumerate(self.base_models):
+            for train_index, holdout_index in kfold.split(X, y):
+                instance = clone(model)
+                self.base_models_[i].append(instance)
+                instance.fit(X[train_index], pd.Series(y)[train_index])
+                y_pred = instance.predict(X[holdout_index])
+                out_of_fold_predictions[holdout_index, i] = y_pred
+
+        # Now train the cloned  meta-model using the out-of-fold predictions as new feature
+        self.meta_model_.fit(out_of_fold_predictions, y)
+        return self
+
+    #Do the predictions of all base models on the test data and use the averaged predictions as
+    #meta-features for the final prediction which is done by the meta-model
+    def predict(self, X):
+        meta_features = np.column_stack([
+            np.column_stack([model.predict(X) for model in base_models]).mean(axis=1)
+            for base_models in self.base_models_ ])
+        return self.meta_model_.predict(meta_features)
