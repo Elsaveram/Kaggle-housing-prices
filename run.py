@@ -35,9 +35,9 @@ import xgboost as xgb
 
 model_rf = RandomForestRegressor(n_estimators=500, n_jobs=-1)
 
-lasso = make_pipeline(RobustScaler(), Lasso(alpha =0.0005, random_state=1))
+lasso = make_pipeline(RobustScaler(), Lasso(alpha= 0.00016102, random_state=1))
 
-ENet = make_pipeline(RobustScaler(), ElasticNet(alpha=0.0005, l1_ratio=.9, random_state=3))
+ENet = make_pipeline(RobustScaler(), ElasticNet(alpha= 0.00016102, l1_ratio=.9, random_state=3))
 
 KRR = KernelRidge()
 
