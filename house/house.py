@@ -53,8 +53,8 @@ class House():
         sns.heatmap(corr_matrix, vmax=.8, square=True, cmap='coolwarm')
         plt.figure()
 
-        cols = corr_matrix.nlargest(k, column_estimate)[column_estimate].index
-        cm = np.corrcoef(data[cols].values.T)
+        self.price_corr_cols = corr_matrix.nlargest(k, column_estimate)[column_estimate].index
+        cm = np.corrcoef(data[self.price_corr_cols].values.T)
         sns.set(font_scale=1.25)
         f, ax = plt.subplots(figsize=(12, 9))
         hm = sns.heatmap(cm, cbar=True, cmap='coolwarm', annot=True, square=True, fmt='.2f', annot_kws={'size': 10}, yticklabels=cols.values, xticklabels=cols.values)

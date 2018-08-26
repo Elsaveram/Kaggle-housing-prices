@@ -105,6 +105,52 @@ score = rmsle_cv(averaged_models)
 print(" Averaged base models score: {:.4f} ({:.4f})\n".format(score.mean(), score.std()))
 # %%
 
+
+
+
+
+
+
+house.corr_matrix(house.train(), 'SalePrice', 20)
+house.price_corr_cols.drop('SalePrice').values
+
+from sklearn import linear_model
+ridge = linear_model.Ridge()
+lasso = linear_model.Lasso()
+plt.rcParams["figure.figsize"] = (12,16)
+bsmt_data = house.bx_train[house.price_corr_cols.drop('SalePrice').values]
+
+alpha_100 = np.logspace(0, 8, 100)
+coef = []
+for i in alpha_100:
+    enet.set_params(alpha = i)
+    ridge.fit(bsmt_data, house.by_train)
+    coef.append(ridge.coef_)
+
+alphas_elastic = np.logspace(-4, 4, 1000)
+coef = []
+
+for i in alphas_elastic:
+    elastic = linear_model.ElasticNet(l1_ratio =0.5)
+    elastic.set_params(alpha = i)
+    elastic.fit(bsmt_data, house.by_train)
+    coef.append(elastic.coef_)
+
+df_coef = pd.DataFrame(coef, index=alphas_elastic, columns=bsmt_data.columns)
+import matplotlib.pyplot as plt
+title = 'Ridge coefficients as a function of the regularization'
+
+plot = df_coef.plot(logx=True, title=title)
+fig = plot.get_figure()
+fig.savefig("output.png")
+
+
+
+
+
+
+
+
 averaged_models.fit(house.bx_train.values, house.by_train)
 prediction = averaged_models.predict(house.bx_test)
 
