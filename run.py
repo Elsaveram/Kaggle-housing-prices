@@ -15,7 +15,7 @@ house = House('data/train.csv','data/test.csv')
 
 # %% Clean, impute, engineer, and encode data
 house.remove_outliers()
-house.clean()
+house.clean(HOUSE_CONFIG)
 house.convert_types(HOUSE_CONFIG)
 house.add_features()
 house.box_cox()

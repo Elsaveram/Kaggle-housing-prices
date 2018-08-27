@@ -125,30 +125,7 @@ class House():
                 fig.axis(ymin=0, ymax=800000)
 
 
-    def relation_stats(self, x, y, z):
-        # x vs y scatter
-        plt.figure()
-        self.all.plot.scatter(x, y)
-        print(self.all[[x, y]].corr(method='pearson'))
-
-        # z vs x box
-        df_config = self.all[[z, x]]
-        df_config.boxplot(by=z, column=x)
-        mod_2 = ols( x + ' ~ ' + z, data=df_config).fit()
-
-        aov_table = sm.stats.anova_lm(mod_2, typ=2)
-        print(aov_table)
-
-        #LotFrontage vs LotShape #significant
-        df_frontage = self.all[['LotShape', 'LotFrontage']]
-        df_frontage.boxplot(by='LotShape', column='LotFrontage')
-
-        mod = ols('LotFrontage ~ LotShape', data=df_frontage).fit()
-        aov_table = sm.stats.anova_lm(mod, typ=2)
-        print(aov_table)
-
-
-    def clean(self):
+    def clean(self,house_config):
         columns_with_missing_data=[name for name in self.all.columns if np.sum(self.all[name].isnull()) !=0]
         columns_with_missing_data.remove('SalePrice')
 
@@ -156,27 +133,24 @@ class House():
         self.all.drop('Id', axis=1, inplace=True)
 
         for column in columns_with_missing_data:
-            col_data = self.all[column]
-            #print( 'Cleaning ' + str(np.sum(col_data.isnull())) + ' data entries for column: ' + column )
+            impute_method = house_config[column]['imputation_method']
+            col = self.all[column]
+            #print( 'Cleaning ' + str(np.sum(self.all[column].isnull())) + ' data entries for column: ' + column + ' with method ' + impute_method)
 
-            if column in ['Electrical']:
-                self.all[column] = [ self.all[column].mode()[0] if pd.isnull(x) else x for x in self.all[column]]
-            elif  column=='GarageYrBlt':
-                self.all[column] = [0 if pd.isnull(x) else x for x in self.all['GarageYrBlt']]
-                self.all[column] = [0 if x == 'NA' else x for x in self.all['GarageYrBlt']]
-            elif column == 'LotFrontage':
+            if impute_method  == "mean()":
+                col.fillna(self.all[column].mean(),inplace=True)
+            if impute_method == "mode()":
+                col.fillna(self.all[column].mode()[0],inplace=True)
+            elif column == "LotFrontage":
                 self.all["LotFrontage"] = self.all.groupby("Neighborhood")["LotFrontage"].transform(lambda x: x.fillna(x.median()))
-            elif column == 'GarageYrBlt':
-                # TBD: One house has a detached garage that could be caclulatd based on the year of construction.
-                self.all[column] = [ 'NA' if pd.isnull(x) else x for x in self.all[column]]
-            elif column in ['BsmtFinSF1','BsmtFinSF2','BsmtFullBath','BsmtHalfBath','BsmtUnfSF','TotalBsmtSF','GarageCars','GarageArea','MasVnrArea']:
-                self.all[column] = [ 0 if pd.isnull(x) else x for x in self.all[column]]
-            elif column == 'Functional':
-                self.all[column] = [ 'Typ' if pd.isnull(x) else x for x in self.all[column]]
-            elif col_data.dtype == 'object':
-                self.all[column] = [ "None" if pd.isnull(x) else x for x in self.all[column]]
+            elif len(impute_method) != 0:
+                self.all[column] = col.fillna(impute_method)
+            elif self.all[column].dtype == 'object':
+                self.all[column] = col.fillna('None')
             else:
+
                 print( 'Uh oh!!! No cleaning strategy for:' + column )
+
 
     # Takes a house config as input and converts types if the length of the dtype is not zero.
     def convert_types(self, house_config):
@@ -187,6 +161,7 @@ class House():
 
     def add_features(self):
         self.all['TotalSF'] = self.all['1stFlrSF'] + self.all['2ndFlrSF']
+        self.all['LastConstructionYear'] = list(map(max, self.all['YearBuilt'].values, self.all['YearRemodAdd'].values))
         self.drop_columns = []
 
     def ordinal_features(self, house_config):
@@ -232,17 +207,17 @@ class House():
 
         #Calculate skewness
         skewed_feats = self.all[numeric_feats].drop(['SalePrice'], axis=1).apply(lambda x: skew(x.dropna())).sort_values(ascending=False)
-        print("\nSkew in numerical features: \n")
+        #print("\nSkew in numerical features: \n")
         skewness = pd.DataFrame({'Skew' :skewed_feats})
-        print(skewness.head(10))
+        #print(skewness.head(10))
 
         #exctract the features with skewness higher than 75%
         skewness = skewness[abs(skewness.Skew)>0.75]
-        print("There are {} skewed numerical features to Box Cox transform".format(skewness.shape[0]))
+        #print("There are {} skewed numerical features to Box Cox transform".format(skewness.shape[0]))
         skewed_features = skewness.index
         lam = 0.15
         for feat in skewed_features:
-            print(feat)
+            #print(feat)
             self.all[feat] = boxcox1p(self.all[feat], lam)
 
 
