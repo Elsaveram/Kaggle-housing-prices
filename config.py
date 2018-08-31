@@ -602,7 +602,7 @@ HOUSE_CONFIG = {
 	"Kitchen": {
 		"description": "Kitchens above grade",
 		"dtype": "",
-		"imputation_method": "",
+		"imputation_method": "0",
 		"members": {
 		}
 	},

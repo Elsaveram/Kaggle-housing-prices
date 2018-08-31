@@ -6,24 +6,23 @@ import math
 import json
 from house import *
 from config import *
-
-# %% load data
 del house
 house = House('data/train.csv','data/test.csv')
-# %%
-
-
-# %% Clean, impute, engineer, and encode data
 house.remove_outliers()
 house.clean(HOUSE_CONFIG)
 house.convert_types(HOUSE_CONFIG)
+house.ordinal_features(HOUSE_CONFIG)
 house.add_features()
 house.box_cox()
-house.ordinal_features(HOUSE_CONFIG)
-#house.label_encode()
 house.one_hot_features()
+
+#score = house.rmsle_cv(lasso)
+#print("Lasso score: {:.4f} ({:.4f})\n".format(score.mean(), score.std()))
 # %%
 
+house.sale_price_charts()
+
+house.all.MasVnrArea.dtype
 
 # %% Create and test models
 from sklearn.linear_model import ElasticNet, Lasso, BayesianRidge, LassoLarsIC
@@ -33,20 +32,20 @@ from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import RobustScaler
 import xgboost as xgb
 
-model_rf = RandomForestRegressor(n_estimators=500, n_jobs=-1)
+model_rf = RandomForestRegressor(n_estimators=50, n_jobs=-1)
 
-lasso = make_pipeline(RobustScaler(), Lasso(alpha= 0.00016102, random_state=1))
+lasso = make_pipeline(RobustScaler(), Lasso(alpha= 0.0006))
 
-ENet = make_pipeline(RobustScaler(), ElasticNet(alpha= 0.00016102, l1_ratio=.9, random_state=3))
+ENet = make_pipeline(RobustScaler(), ElasticNet(alpha= 0.0006, l1_ratio=.9))
 
 KRR = KernelRidge()
 
 GBoost = GradientBoostingRegressor(n_estimators=3000, learning_rate=0.05, max_depth=4, max_features='sqrt',
-                                    min_samples_leaf=15, min_samples_split=10, loss='huber', random_state =5)
+                                    min_samples_leaf=15, min_samples_split=10, loss='huber')
 
 model_xgb = xgb.XGBRegressor(colsample_bytree=0.4603, gamma=0.0468, learning_rate=0.05, max_depth=3,
                             min_child_weight=1.7817, n_estimators=2200, reg_alpha=0.4640, reg_lambda=0.8571,
-                            subsample=0.5213, silent=1, random_state =7, nthread = -1)
+                            subsample=0.5213, silent=1, nthread = -1)
 
 score = house.rmsle_cv(model_rf)
 print("model_rf score: {:.4f} ({:.4f})\n".format(score.mean(), score.std()))
@@ -77,7 +76,7 @@ gboost_prediction = house.fit_and_predict(GBoost)
 from sklearn.model_selection import GridSearchCV
 
 alphas = np.logspace(-5, 2, 30)
-grid = GridSearchCV(estimator=Lasso(),param_grid=dict(alpha=alphas), cv=10, scoring='r2')
+grid = GridSearchCV(estimator=Lasso(),param_grid=dict(alpha=alphas), cv=5, scoring='r2')
 grid.fit(house.bx_train, house.by_train) # entire datasets were fed here
 
 print(grid.best_params_, grid.best_score_)# score -0.0470788758558
@@ -91,6 +90,9 @@ feature_importances = pd.DataFrame(model_rf.feature_importances_,
                                     columns=['importance']).sort_values('importance', ascending=False)
 
 top_30 = feature_importances.head(30).index.tolist()
+top_30
+feature_importances.head(30)
+
 
 data = house.bx_train[top_30]
 lasso = Lasso()
@@ -164,10 +166,13 @@ print("RSS: %.2f" % np.sum((ols.predict(ols_df) - house.by_train) ** 2))
 print("R^2: %.5f" % ols.score(ols_df, house.by_train))
 
 #Ensemble
-ensemble = -0.577 + stacked_pred*(-0.03) + xgb_pred*(-0.251) + model_rf_pred*1.329
+ensemble = -0.522 + stacked_pred*(0.226) + xgb_pred*(-0.307) + model_rf_pred*1.124
+ensemble
+
+
 
 #submission
 sub = pd.DataFrame()
 sub['Id'] = house.bx_test_ids
-sub['SalePrice'] = ensemble
+sub['SalePrice'] = np.expm1(lasso_prediction)
 sub.to_csv('submission.csv',index=False)
