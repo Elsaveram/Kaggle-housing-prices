@@ -16,23 +16,73 @@ house.add_features()
 house.box_cox()
 house.one_hot_features()
 
-#score = house.rmsle_cv(lasso)
-#print("Lasso score: {:.4f} ({:.4f})\n".format(score.mean(), score.std()))
-# %%
+#%%
+
+house.sk_random_forest(house.encoded_all, 100)
+house.bx_train.to_csv('x_train.csv')
+house.by_train.to_csv('y_train.csv')
+house.bx_test.to_csv('x_test.csv')
+pd.set_option('display.max_columns', 500)
+
+##EDA:
+#All variables:
+house.all.shape
+house.all.head()
+house.all.dtypes
+
+house.test().shape
+house.train().shape
+
+#Response varriable:
+house.train().SalePrice.describe()
+house.log_transform(house.train().SalePrice)
+house.corr_matrix(house.train(), 'SalePrice')
+
+# Show Missing values:
+house.missing_stats()
+
+# Show how data is distributed
+house.distribution_charts()
 
 house.sale_price_charts()
 
 house.all.MasVnrArea.dtype
 
-# %% Create and test models
-from sklearn.linear_model import ElasticNet, Lasso, BayesianRidge, LassoLarsIC
-from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
+# shape
+print('Shape house.bx_train: {}'.format(house.bx_train.shape))
+
+house.bx_train.sample(10)
+
+
+##MODELING
+
+from sklearn import linear_model
+from sklearn.linear_model import ElasticNet, Lasso,  BayesianRidge, LassoLarsIC
+from sklearn.ensemble import RandomForestRegressor,  GradientBoostingRegressor
 from sklearn.kernel_ridge import KernelRidge
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import RobustScaler
 import xgboost as xgb
 
-model_rf = RandomForestRegressor(n_estimators=50, n_jobs=-1)
+import numpy as np
+import pandas as pd
+
+
+
+#Validation function
+n_folds = 5
+
+def rmsle_cv(model):
+    kf = KFold(n_folds, shuffle=True).get_n_splits(house.bx_train.values)
+    rmse= np.sqrt(-cross_val_score(model, house.bx_train.values, house.by_train.values, scoring="neg_mean_squared_error", cv = kf))
+    return(rmse)
+
+#OLS
+
+model_ols = linear_model.LinearRegression()
+
+
+model_rf = RandomForestRegressor(n_estimators=500, n_jobs=-1)
 
 lasso = make_pipeline(RobustScaler(), Lasso(alpha= 0.0006))
 
@@ -47,8 +97,15 @@ model_xgb = xgb.XGBRegressor(colsample_bytree=0.4603, gamma=0.0468, learning_rat
                             min_child_weight=1.7817, n_estimators=2200, reg_alpha=0.4640, reg_lambda=0.8571,
                             subsample=0.5213, silent=1, nthread = -1)
 
-score = house.rmsle_cv(model_rf)
-print("model_rf score: {:.4f} ({:.4f})\n".format(score.mean(), score.std()))
+# %%
+
+house.by_train = np.log1p(house.by_train)
+
+score = rmsle_cv(model_ols)
+print("\model_ols score: {:.4f} ({:.4f})\n".format(score.mean(), score.std()))
+
+score = rmsle_cv(model_rf)
+print("\model_rf score: {:.4f} ({:.4f})\n".format(score.mean(), score.std()))
 
 score = house.rmsle_cv(lasso)
 print("Lasso score: {:.4f} ({:.4f})\n".format(score.mean(), score.std()))
@@ -64,6 +121,17 @@ print("Gradient Boosting score: {:.4f} ({:.4f})\n".format(score.mean(), score.st
 
 score = house.rmsle_cv(model_xgb)
 print("Xgboost score: {:.4f} ({:.4f})\n".format(score.mean(), score.std()))
+# %%
+
+model_ols.fit(house.bx_train, house.by_train)
+prediction = model_ols.predict(house.bx_test)
+print("beta_1, beta_2: " + str(np.round(model_ols.coef_, 3)))
+print("beta_0: " + str(np.round(model_ols.intercept_, 3)))
+print("RSS: %.2f" % np.sum((model_ols.predict(house.bx_train) - house.by_train) ** 2))
+print("R^2: %.5f" % model_ols.score(house.bx_train, house.by_train))
+
+model_rf.fit(house.bx_train.values, house.by_train)
+prediction = model_rf.predict(house.bx_test)
 
 rf_pred = house.fit_and_predict(model_rf)
 lasso_prediction = house.fit_and_predict(lasso)
@@ -133,6 +201,7 @@ def rmsle(y, y_pred):
     return np.sqrt(mean_squared_error(y, y_pred))
 
 #Stacked Regressor
+
 stacked_averaged_models.fit(house.bx_train.values, house.by_train.values)
 stacked_train_pred = stacked_averaged_models.predict(house.bx_train.values)
 stacked_pred = np.expm1(stacked_averaged_models.predict(house.bx_test))
@@ -143,6 +212,12 @@ model_xgb.fit(house.bx_train.values, house.by_train)
 xgb_train_pred = model_xgb.predict(house.bx_train.values)
 xgb_pred = np.expm1(model_xgb.predict(house.bx_test.values))
 print(rmsle(house.by_train, xgb_train_pred))
+
+#OLS
+model_ols.fit(house.bx_train.values, house.by_train)
+model_rf_train_pred = model_ols.predict(house.bx_train.values)
+model_rf_pred = np.expm1(model_ols.predict(house.bx_test.values))
+print(rmsle(house.by_train, model_rf_train_pred))
 
 #Rforest
 model_rf.fit(house.bx_train.values, house.by_train)
