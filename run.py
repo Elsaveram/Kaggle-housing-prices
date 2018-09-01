@@ -15,10 +15,8 @@ house.ordinal_features(HOUSE_CONFIG)
 house.add_features()
 house.box_cox()
 house.one_hot_features()
-
 #%%
 
-house.sk_random_forest(house.encoded_all, 100)
 house.bx_train.to_csv('x_train.csv')
 house.by_train.to_csv('y_train.csv')
 house.bx_test.to_csv('x_test.csv')
@@ -55,7 +53,7 @@ house.bx_train.sample(10)
 
 
 ##MODELING
-
+# %%
 from sklearn import linear_model
 from sklearn.linear_model import ElasticNet, Lasso,  BayesianRidge, LassoLarsIC
 from sklearn.ensemble import RandomForestRegressor,  GradientBoostingRegressor
@@ -67,20 +65,8 @@ import xgboost as xgb
 import numpy as np
 import pandas as pd
 
-
-
-#Validation function
-n_folds = 5
-
-def rmsle_cv(model):
-    kf = KFold(n_folds, shuffle=True).get_n_splits(house.bx_train.values)
-    rmse= np.sqrt(-cross_val_score(model, house.bx_train.values, house.by_train.values, scoring="neg_mean_squared_error", cv = kf))
-    return(rmse)
-
 #OLS
-
 model_ols = linear_model.LinearRegression()
-
 
 model_rf = RandomForestRegressor(n_estimators=500, n_jobs=-1)
 
@@ -98,13 +84,10 @@ model_xgb = xgb.XGBRegressor(colsample_bytree=0.4603, gamma=0.0468, learning_rat
                             subsample=0.5213, silent=1, nthread = -1)
 
 # %%
-
-house.by_train = np.log1p(house.by_train)
-
-score = rmsle_cv(model_ols)
+score = house.rmsle_cv(model_ols)
 print("\model_ols score: {:.4f} ({:.4f})\n".format(score.mean(), score.std()))
 
-score = rmsle_cv(model_rf)
+score = house.rmsle_cv(model_rf)
 print("\model_rf score: {:.4f} ({:.4f})\n".format(score.mean(), score.std()))
 
 score = house.rmsle_cv(lasso)
@@ -121,24 +104,21 @@ print("Gradient Boosting score: {:.4f} ({:.4f})\n".format(score.mean(), score.st
 
 score = house.rmsle_cv(model_xgb)
 print("Xgboost score: {:.4f} ({:.4f})\n".format(score.mean(), score.std()))
-# %%
 
-model_ols.fit(house.bx_train, house.by_train)
-prediction = model_ols.predict(house.bx_test)
-print("beta_1, beta_2: " + str(np.round(model_ols.coef_, 3)))
-print("beta_0: " + str(np.round(model_ols.intercept_, 3)))
-print("RSS: %.2f" % np.sum((model_ols.predict(house.bx_train) - house.by_train) ** 2))
-print("R^2: %.5f" % model_ols.score(house.bx_train, house.by_train))
 
-model_rf.fit(house.bx_train.values, house.by_train)
-prediction = model_rf.predict(house.bx_test)
-
+ols_prediction = house.fit_and_predict(model_ols)
 rf_pred = house.fit_and_predict(model_rf)
 lasso_prediction = house.fit_and_predict(lasso)
 enet_prediction = house.fit_and_predict(ENet)
 gboost_prediction = house.fit_and_predict(GBoost)
 # TBD: Feature name mismatch
 #xgb_prediction = house.fit_and_predict(model_xgb)
+
+
+print("beta_1, beta_2: " + str(np.round(model_ols.coef_, 3)))
+print("beta_0: " + str(np.round(model_ols.intercept_, 3)))
+print("RSS: %.2f" % np.sum((model_ols.predict(house.bx_train) - house.by_train) ** 2))
+print("R^2: %.5f" % model_ols.score(house.bx_train, house.by_train))
 # %%
 
 from sklearn.model_selection import GridSearchCV
@@ -243,8 +223,6 @@ print("R^2: %.5f" % ols.score(ols_df, house.by_train))
 #Ensemble
 ensemble = -0.522 + stacked_pred*(0.226) + xgb_pred*(-0.307) + model_rf_pred*1.124
 ensemble
-
-
 
 #submission
 sub = pd.DataFrame()
